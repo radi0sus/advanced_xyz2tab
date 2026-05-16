@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xyz2tab</title>
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+    <!-- Header -->
+    <header id="header">
+        <span id="app-title">xyz2tab</span>
+        <div id="header-actions">
+            <label id="index-start-control" title="Atom label numbering">
+                <span>Index</span>
+                <select id="atom-index-start">
+                    <option value="0" selected>from 0</option>
+                    <option value="1">from 1</option>
+                </select>
+            </label>
+        
+            <button id="btn-export-md" class="btn" disabled>Export .md</button>
+            <button id="btn-export-png" class="btn" disabled>Export .png</button>
+            <label class="btn btn-primary" for="file-input">Open .xyz</label>
+            <input type="file" id="file-input" accept=".xyz" style="display:none">
+        </div>
+    </header>
+
+    <!-- Drop zone (shown when no file loaded) -->
+    <div id="dropzone">
+        <div id="dropzone-inner">
+            <div id="dropzone-icon">⬡</div>
+            <div id="dropzone-text">Drop a .xyz file here or click <strong>Open .xyz</strong></div>
+        </div>
+    </div>
+
+    <!-- Main layout (shown after file loaded) -->
+    <div id="main-layout" class="hidden">
+
+        <!-- Left: Viewer + Atom list -->
+        <div id="viewer-panel">
+
+            <!-- 3D Viewer -->
+            <div id="viewer-container"></div>
+
+            <!-- Viewer controls -->
+            <div id="viewer-controls">
+                <button id="btn-reset-view" class="btn-small">Reset view</button>
+                <button id="btn-toggle-atom-labels" class="btn-small">Atom names</button>
+                <button id="btn-toggle-bond-labels" class="btn-small">Bond lengths</button>
+            </div>
+
+            <!-- Selection / Geometry toolbar -->
+            <div id="selection-toolbar">
+                <div id="selection-row">
+                    <span id="selection-label">Selection</span>
+                    <div id="selection-chips" class="selection-chips"></div>
+                    <button id="btn-selection-undo" class="btn-small">Undo</button>
+                    <button id="btn-selection-clear" class="btn-small btn-danger">Clear</button>
+                </div>
+
+                <div id="selection-actions">
+                    <button id="btn-save-distance" class="btn-small" disabled>Save distance</button>
+                    <button id="btn-add-bond" class="btn-small" disabled>Add bond</button>
+                    <button id="btn-save-angle" class="btn-small" disabled>Save angle</button>
+                    <button id="btn-save-dihedral" class="btn-small" disabled>Save dihedral</button>
+                    <button id="btn-set-plane1" class="btn-small" disabled>Set Plane 1</button>
+                    <button id="btn-set-plane2" class="btn-small" disabled>Set Plane 2</button>
+                    <button id="btn-dist-plane1" class="btn-small" disabled>Dist. to Plane 1</button>
+                    <button id="btn-dist-plane2" class="btn-small" disabled>Dist. to Plane 2</button>
+                </div>
+
+                <div id="selection-output" class="hidden"></div>
+            </div>
+
+            <!-- Resizer between viewer and atom list -->
+            <div id="viewer-atom-resizer" class="resizer resizer-horizontal" title="Resize atom list"></div>
+
+            <!-- Atom list under viewer -->
+            <div id="atom-list-panel">
+                <div id="atom-list-header">
+                    <span id="atom-list-title">Atom list</span>
+                    <input
+                        type="text"
+                        id="atom-list-search"
+                        placeholder="Search atom, element, coordinate..."
+                        autocomplete="off"
+                    >
+                    <button id="btn-reset-exclusions" class="btn-small" disabled>Reset exclusions</button>
+                </div>
+                <div id="atom-list-wrap"></div>
+            </div>
+
+        </div>
+
+        <!-- Resizer between left and right panels -->
+        <div id="layout-resizer" class="resizer resizer-vertical" title="Resize panels"></div>
+
+        <!-- Right: Tables & Controls -->
+        <div id="table-panel">
+
+            <!-- File info -->
+            <div id="info-bar">
+                <span id="info-formula"></span>
+                <span id="info-fw"></span>
+                <span id="info-natoms"></span>
+            </div>
+
+            <!-- Element toggles -->
+            <div id="filter-section">
+                <div id="filter-label">Active elements:</div>
+                <div id="element-toggles"></div>
+                <div id="radius-control">
+                    <label for="radius-slider">Cov. radius +</label>
+                    <input type="range" id="radius-slider" min="0" max="30" value="8" step="0.5">
+                    <span id="radius-value">8.0 %</span>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div id="tab-bar">
+                <button class="tab active" data-tab="bonds">Bonds</button>
+                <button class="tab" data-tab="angles">Angles</button>
+                <button class="tab" data-tab="plane">Planes</button>
+                <button class="tab" data-tab="dihedral">Dihedral</button>
+                <button class="tab" data-tab="info">Info</button>
+            </div>
+
+            <!-- Tab: Bonds -->
+            <div id="tab-bonds" class="tab-content active">
+                <div id="manual-distances-wrap"></div>
+                <div id="bonds-table-wrap"></div>
+                <div id="bonds-summary-wrap"></div>
+                <div id="bonds-stats-wrap"></div>
+            </div>
+            
+            <!-- Tab: Angles -->
+            <div id="tab-angles" class="tab-content">
+                <div id="manual-angles-wrap"></div>
+                <div id="angles-table-wrap"></div>
+                <div id="angles-summary-wrap"></div>
+                <div id="angles-stats-wrap"></div>
+            </div>
+
+            <!-- Tab: Planes -->
+            <div id="tab-plane" class="tab-content">
+
+                <div class="result-box" style="margin-bottom:10px">
+                    Select three or more atoms in the viewer or atom list, then use
+                    <b>Set Plane 1</b> or <b>Set Plane 2</b> in the selection toolbar.
+                </div>
+
+                <div class="plane-block" id="plane1-block">
+                    <div class="plane-header">
+                        <span class="plane-title">Plane 1</span>
+                        <button class="btn-small btn-danger" id="btn-plane1-clear">Clear</button>
+                    </div>
+                    <div id="plane1-chips" class="chip-row"></div>
+                    <div id="plane1-result"></div>
+                </div>
+
+                <div class="plane-block" id="plane2-block">
+                    <div class="plane-header">
+                        <span class="plane-title">Plane 2</span>
+                        <button class="btn-small btn-danger" id="btn-plane2-clear">Clear</button>
+                    </div>
+                    <div id="plane2-chips" class="chip-row"></div>
+                    <div id="plane2-result"></div>
+                </div>
+
+                <div id="plane2-to-plane1-result"></div>
+                <div id="plane-angle-result"></div>
+            </div>
+
+            <!-- Tab: Dihedral -->
+            <div id="tab-dihedral" class="tab-content">
+            
+                <div class="result-box" style="margin-bottom:10px">
+                    Select four atoms in order, then use <b>Save dihedral</b> in the selection toolbar.
+                </div>
+            
+                <div class="plane-header">
+                    <span class="plane-title">Dihedral angle</span>
+                    <button class="btn-small btn-danger" id="btn-dihedral-clear">Clear</button>
+                </div>
+            
+                <div id="dihedral-chips" class="chip-row"></div>
+                <div id="manual-dihedrals-wrap"></div>
+                <div id="dihedral-result"></div>
+            </div>
+
+            <!-- Tab: Info -->
+            <div id="tab-info" class="tab-content">
+                <div id="info-table-wrap"></div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script src="static/vendor/3dmol.min.js"></script>
+<script src="static/js/parser.js"></script>
+<script src="static/js/chem.js"></script>
+<script src="static/js/tables.js"></script>
+<script src="static/js/viewer.js"></script>
+<script src="static/js/main.js"></script>
+
+</body>
+</html>

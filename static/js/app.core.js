@@ -25,12 +25,22 @@ const App = {
     manualDihedrals: [],     // saved dihedral measurements
     _nextMeasurementId: 1,
 
-    // Plane/dihedral result state
+    // Legacy Plane 1/2 state kept during migration
     plane1Atoms: [],
     plane2Atoms: [],
     plane1Result: null,
     plane2Result: null,
     planeAngle: null,
+
+    // New saved-plane system
+    savedPlanes: [],
+    activePlaneId: null,
+    savedPlaneDistances: [],
+    savedPlaneAngles: [],
+    _nextPlaneId: 1,
+    _nextPlaneMeasurementId: 1,
+
+    // Dihedral result state
     dihedralAtoms: [],
     dihedralAngle: null,
 
@@ -222,12 +232,22 @@ const App = {
         this.manualDihedrals = [];
         this._nextMeasurementId = 1;
 
-        // Reset plane/dihedral state
+        // Reset legacy plane state
         this.plane1Atoms = [];
         this.plane2Atoms = [];
         this.plane1Result = null;
         this.plane2Result = null;
         this.planeAngle = null;
+
+        // Reset new saved-plane state
+        this.savedPlanes = [];
+        this.activePlaneId = null;
+        this.savedPlaneDistances = [];
+        this.savedPlaneAngles = [];
+        this._nextPlaneId = 1;
+        this._nextPlaneMeasurementId = 1;
+
+        // Reset dihedral state
         this.dihedralAtoms = [];
         this.dihedralAngle = null;
 
@@ -240,14 +260,29 @@ const App = {
         this._updateChips('plane2');
         this._updateChips('dihedral');
 
-        document.getElementById('plane1-result').innerHTML = '';
-        document.getElementById('plane2-result').innerHTML = '';
-        document.getElementById('plane2-to-plane1-result').innerHTML = '';
-        document.getElementById('plane-angle-result').innerHTML = '';
-        document.getElementById('dihedral-result').innerHTML = '';
+        const clearIds = [
+            'plane1-result',
+            'plane2-result',
+            'plane2-to-plane1-result',
+            'plane-angle-result',
+            'dihedral-result',
+            'current-plane-preview',
+            'saved-planes-wrap',
+            'saved-plane-distances-wrap',
+            'saved-plane-angles-wrap',
+        ];
+
+        clearIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '';
+        });
 
         this._showSelectionOutput('');
         this._renderSelectionToolbar();
+
+        if (typeof this._renderPlaneManagement === 'function') {
+            this._renderPlaneManagement();
+        }
 
         // Initial bond & angle calculation
         this.recalcBonds();

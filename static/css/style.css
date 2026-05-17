@@ -991,6 +991,82 @@ th.sortable-th.sorted .sort-indicator {
     color: var(--text);
 }
 
+/* Plane management tables */
+
+/* Saved planes: name and atom list */
+#saved-planes-wrap .data-table td:nth-child(3),
+#saved-planes-wrap .data-table td:nth-child(4) {
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* Saved planes: RMSD and status */
+#saved-planes-wrap .data-table td:nth-child(6),
+#saved-planes-wrap .data-table td:nth-child(7) {
+    font-weight: 650;
+    color: var(--text);
+}
+
+/* Saved plane distances: plane, atom and value */
+#saved-plane-distances-wrap .data-table td:nth-child(2),
+#saved-plane-distances-wrap .data-table td:nth-child(3),
+#saved-plane-distances-wrap .data-table td:nth-child(4) {
+    font-weight: 650;
+    color: var(--text);
+}
+
+/* Saved plane distances: status */
+#saved-plane-distances-wrap .data-table td:nth-child(5) {
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Saved plane angles: plane names and angle value */
+#saved-plane-angles-wrap .data-table td:nth-child(2),
+#saved-plane-angles-wrap .data-table td:nth-child(3),
+#saved-plane-angles-wrap .data-table td:nth-child(4) {
+    font-weight: 650;
+    color: var(--text);
+}
+
+/* Saved plane angles: status */
+#saved-plane-angles-wrap .data-table td:nth-child(5) {
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Active marker column */
+#saved-planes-wrap .data-table th:nth-child(2),
+#saved-planes-wrap .data-table td:nth-child(2) {
+    text-align: center;
+}
+
+/* Action columns */
+#saved-planes-wrap .data-table th:last-child,
+#saved-planes-wrap .data-table td:last-child,
+#saved-plane-distances-wrap .data-table th:last-child,
+#saved-plane-distances-wrap .data-table td:last-child,
+#saved-plane-angles-wrap .data-table th:last-child,
+#saved-plane-angles-wrap .data-table td:last-child {
+    text-align: right;
+}
+
+/* Plane table action buttons */
+#saved-planes-wrap .data-table .btn-small,
+#saved-plane-distances-wrap .data-table .btn-small,
+#saved-plane-angles-wrap .data-table .btn-small {
+    margin-left: 4px;
+}
+
+#current-plane-preview .result-box {
+    border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--surface) 72%, var(--accent-light) 28%);
+}
+
+#current-plane-preview .result-box div {
+    font-weight: 500;
+}
+
 .data-table tbody tr:nth-child(even) td {
     background: color-mix(in srgb, var(--table-zebra) 78%, var(--bg) 22%);
 }
@@ -1003,6 +1079,10 @@ th.sortable-th.sorted .sort-indicator {
 
 .data-table tr.selected td {
     background: var(--accent-light);
+}
+
+.data-table tr.inactive td {
+    opacity: 0.45;
 }
 
 .data-table tr.highlighted td {

@@ -67,10 +67,8 @@
                     <button id="btn-add-bond" class="btn-small" disabled>Add bond</button>
                     <button id="btn-save-angle" class="btn-small" disabled>Save angle</button>
                     <button id="btn-save-dihedral" class="btn-small" disabled>Save dihedral</button>
-                    <button id="btn-set-plane1" class="btn-small" disabled>Set Plane 1</button>
-                    <button id="btn-set-plane2" class="btn-small" disabled>Set Plane 2</button>
-                    <button id="btn-dist-plane1" class="btn-small" disabled>Dist. to Plane 1</button>
-                    <button id="btn-dist-plane2" class="btn-small" disabled>Dist. to Plane 2</button>
+                    <button id="btn-save-current-plane" class="btn-small" disabled>Save current plane</button>
+                    <button id="btn-save-plane-distance" class="btn-small" disabled>Save dist. to active plane</button>
                 </div>
 
                 <div id="selection-output" class="hidden"></div>
@@ -147,32 +145,39 @@
 
             <!-- Tab: Planes -->
             <div id="tab-plane" class="tab-content">
-
+            
                 <div class="result-box" style="margin-bottom:10px">
-                    Select three or more atoms in the viewer or atom list, then use
-                    <b>Set Plane 1</b> or <b>Set Plane 2</b> in the selection toolbar.
+                    Select three or more atoms, then use
+                    <b>Save current plane</b>.
+                    The saved plane becomes the active reference plane.
+                    Select one or more atoms to save distances to the active plane.
                 </div>
-
-                <div class="plane-block" id="plane1-block">
-                    <div class="plane-header">
-                        <span class="plane-title">Plane 1</span>
-                        <button class="btn-small btn-danger" id="btn-plane1-clear">Clear</button>
-                    </div>
+            
+                <div id="current-plane-preview"></div>
+            
+                <div id="saved-planes-wrap"></div>
+            
+                <div id="saved-plane-distances-wrap"></div>
+            
+                <div id="saved-plane-angles-wrap"></div>
+            
+                <!-- Legacy compatibility placeholders.
+                     Keep these hidden for now so older split JS does not crash while
+                     we migrate the plane logic step by step. -->
+                <div id="legacy-plane-compat" class="hidden">
+                    <button class="btn-small btn-danger" id="btn-plane1-clear">Clear</button>
+                    <button class="btn-small btn-danger" id="btn-plane2-clear">Clear</button>
+            
                     <div id="plane1-chips" class="chip-row"></div>
                     <div id="plane1-result"></div>
-                </div>
-
-                <div class="plane-block" id="plane2-block">
-                    <div class="plane-header">
-                        <span class="plane-title">Plane 2</span>
-                        <button class="btn-small btn-danger" id="btn-plane2-clear">Clear</button>
-                    </div>
+            
                     <div id="plane2-chips" class="chip-row"></div>
                     <div id="plane2-result"></div>
+            
+                    <div id="plane2-to-plane1-result"></div>
+                    <div id="plane-angle-result"></div>
                 </div>
-
-                <div id="plane2-to-plane1-result"></div>
-                <div id="plane-angle-result"></div>
+            
             </div>
 
             <!-- Tab: Dihedral -->

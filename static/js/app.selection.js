@@ -16,9 +16,23 @@ Object.assign(App, {
         bind('btn-save-angle', () => this.saveSelectedAngle());
         bind('btn-save-dihedral', () => this.saveSelectedDihedral());
 
+        // New saved-plane workflow.
+        // The methods are implemented in app.geometry.js in the next step.
+        bind('btn-save-current-plane', () => {
+            if (typeof this.saveCurrentPlane === 'function') {
+                this.saveCurrentPlane();
+            }
+        });
+
+        bind('btn-save-plane-distance', () => {
+            if (typeof this.saveDistancesToActivePlane === 'function') {
+                this.saveDistancesToActivePlane();
+            }
+        });
+
+        // Legacy buttons, if still present in older HTML.
         bind('btn-set-plane1', () => this._setPlaneFromCentralSelection(1));
         bind('btn-set-plane2', () => this._setPlaneFromCentralSelection(2));
-
         bind('btn-dist-plane1', () => this._measureSelectionToPlane(1));
         bind('btn-dist-plane2', () => this._measureSelectionToPlane(2));
     },
@@ -51,8 +65,17 @@ Object.assign(App, {
         this._syncSelectionHighlight();
     },
 
-    _finishSelectionAction() {
+    _finishSelectionAction(options = {}) {
+        const preserveOutput = options.preserveOutput === true;
+
         this.selection = [];
+
+        if (preserveOutput) {
+            this._setHighlightedAtoms(new Set());
+            this._renderSelectionToolbar();
+            return;
+        }
+
         this._syncSelectionHighlight();
     },
 
@@ -114,6 +137,16 @@ Object.assign(App, {
 
         const n = atoms.length;
 
+        const hasSaveCurrentPlane =
+            typeof this.saveCurrentPlane === 'function';
+
+        const hasSaveDistancesToActivePlane =
+            typeof this.saveDistancesToActivePlane === 'function';
+
+        const activePlane = typeof this._getActivePlane === 'function'
+            ? this._getActivePlane()
+            : null;
+
         const setDisabled = (id, disabled) => {
             const btn = document.getElementById(id);
             if (btn) btn.disabled = disabled;
@@ -128,6 +161,21 @@ Object.assign(App, {
         setDisabled('btn-save-angle', n !== 3);
         setDisabled('btn-save-dihedral', n !== 4);
 
+        // New plane workflow.
+        // Save current plane needs at least 3 selected atoms and a geometry implementation.
+        setDisabled(
+            'btn-save-current-plane',
+            n < 3 || !hasSaveCurrentPlane
+        );
+
+        // Save distance to active plane needs at least 1 atom, an active plane,
+        // and a geometry implementation.
+        setDisabled(
+            'btn-save-plane-distance',
+            n < 1 || !activePlane || !hasSaveDistancesToActivePlane
+        );
+
+        // Legacy buttons, if present.
         setDisabled('btn-set-plane1', n < 3);
         setDisabled('btn-set-plane2', n < 3);
 
@@ -157,6 +205,10 @@ Object.assign(App, {
             return;
         }
 
+        const activePlane = typeof this._getActivePlane === 'function'
+            ? this._getActivePlane()
+            : null;
+
         if (atoms.length === 1) {
             const a = atoms[0];
 
@@ -165,20 +217,20 @@ Object.assign(App, {
                 <div>Selected atom: <span class="result-value">${a.label}</span></div>
             `;
 
-            if (this.plane1Result || this.plane2Result) {
-                html += '<table style="margin-top:6px"><tbody>';
+            if (activePlane && typeof this._distanceAtomToPlane === 'function') {
+                const d = this._distanceAtomToPlane(a, activePlane.result);
 
-                if (this.plane1Result) {
-                    const d = this._distanceAtomToPlane(a, this.plane1Result);
-                    html += `<tr><td>Distance to Plane 1</td><td>${d.toFixed(4)} Å</td></tr>`;
-                }
-
-                if (this.plane2Result) {
-                    const d = this._distanceAtomToPlane(a, this.plane2Result);
-                    html += `<tr><td>Distance to Plane 2</td><td>${d.toFixed(4)} Å</td></tr>`;
-                }
-
-                html += '</tbody></table>';
+                html += `
+                    <table style="margin-top:6px">
+                        <tbody>
+                            <tr>
+                                <td>Distance to active plane</td>
+                                <td>${activePlane.name}</td>
+                                <td>${d.toFixed(4)} Å</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
             }
 
             this._showSelectionOutput(html);
@@ -188,7 +240,7 @@ Object.assign(App, {
         if (atoms.length === 2) {
             const d = Chem.distance(atoms[0], atoms[1]);
 
-            this._showSelectionOutput(`
+            let html = `
                 <div class="selection-output-title">Distance preview</div>
                 <div style="margin-bottom:3px;color:var(--text-muted)">
                     ${atoms[0].label}–${atoms[1].label}
@@ -197,7 +249,16 @@ Object.assign(App, {
                     Distance:
                     <span class="result-value">${d.toFixed(4)} Å</span>
                 </div>
-            `);
+            `;
+
+            if (
+                activePlane &&
+                typeof this._renderPlaneDistancePreviewTable === 'function'
+            ) {
+                html += this._renderPlaneDistancePreviewTable(atoms, activePlane);
+            }
+
+            this._showSelectionOutput(html);
             return;
         }
 
@@ -205,8 +266,8 @@ Object.assign(App, {
             const angle = Chem.calcAngle(atoms[0], atoms[1], atoms[2]);
             const plane = Chem.calcPlane(atoms);
 
-            this._showSelectionOutput(`
-                <div class="selection-output-title">Angle preview</div>
+            let html = `
+                <div class="selection-output-title">Angle / plane preview</div>
                 <div style="margin-bottom:3px;color:var(--text-muted)">
                     ${atoms.map(a => a.label).join('–')}
                 </div>
@@ -215,7 +276,20 @@ Object.assign(App, {
                     <span class="result-value">${angle.toFixed(3)}°</span>
                 </div>
                 ${plane ? `<div style="margin-top:4px;color:var(--text-muted)">Plane RMSD: ${plane.rmsd.toFixed(4)} Å</div>` : ''}
-            `);
+            `;
+
+            if (plane && activePlane) {
+                const planeAngle = Chem.angleBetweenPlanes(activePlane.result, plane);
+
+                html += `
+                    <div style="margin-top:4px;color:var(--text-muted)">
+                        Angle to active plane ${activePlane.name}:
+                        <span class="result-value">${planeAngle.toFixed(3)}°</span>
+                    </div>
+                `;
+            }
+
+            this._showSelectionOutput(html);
             return;
         }
 
@@ -223,8 +297,8 @@ Object.assign(App, {
             const angle = Chem.calcDihedral(...atoms);
             const plane = Chem.calcPlane(atoms);
 
-            this._showSelectionOutput(`
-                <div class="selection-output-title">Dihedral preview</div>
+            let html = `
+                <div class="selection-output-title">Dihedral / plane preview</div>
                 <div style="margin-bottom:3px;color:var(--text-muted)">
                     ${atoms.map(a => a.label).join('–')}
                 </div>
@@ -233,20 +307,46 @@ Object.assign(App, {
                     <span class="result-value">${angle.toFixed(3)}°</span>
                 </div>
                 ${plane ? `<div style="margin-top:4px;color:var(--text-muted)">Plane RMSD: ${plane.rmsd.toFixed(4)} Å</div>` : ''}
-            `);
+            `;
+
+            if (plane && activePlane) {
+                const planeAngle = Chem.angleBetweenPlanes(activePlane.result, plane);
+
+                html += `
+                    <div style="margin-top:4px;color:var(--text-muted)">
+                        Angle to active plane ${activePlane.name}:
+                        <span class="result-value">${planeAngle.toFixed(3)}°</span>
+                    </div>
+                `;
+            }
+
+            this._showSelectionOutput(html);
             return;
         }
 
         if (atoms.length >= 5) {
             const plane = Chem.calcPlane(atoms);
 
-            this._showSelectionOutput(`
+            let html = `
                 <div class="selection-output-title">Plane preview</div>
                 <div style="margin-bottom:3px;color:var(--text-muted)">
                     ${atoms.length} selected atoms
                 </div>
                 ${plane ? `<div>Plane RMSD: <span class="result-value">${plane.rmsd.toFixed(4)} Å</span></div>` : ''}
-            `);
+            `;
+
+            if (plane && activePlane) {
+                const planeAngle = Chem.angleBetweenPlanes(activePlane.result, plane);
+
+                html += `
+                    <div style="margin-top:4px;color:var(--text-muted)">
+                        Angle to active plane ${activePlane.name}:
+                        <span class="result-value">${planeAngle.toFixed(3)}°</span>
+                    </div>
+                `;
+            }
+
+            this._showSelectionOutput(html);
         }
     },
 });

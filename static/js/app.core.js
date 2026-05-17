@@ -28,6 +28,7 @@ const App = {
     // Saved-plane system
     savedPlanes: [],
     activePlaneId: null,
+    activePlaneDetailsId: null,
     savedPlaneDistances: [],
     savedPlaneAngles: [],
     _nextPlaneId: 1,
@@ -219,6 +220,7 @@ const App = {
         // Reset saved-plane state
         this.savedPlanes = [];
         this.activePlaneId = null;
+        this.activePlaneDetailsId = null;
         this.savedPlaneDistances = [];
         this.savedPlaneAngles = [];
         this._nextPlaneId = 1;
@@ -239,6 +241,7 @@ const App = {
             'dihedral-result',
             'current-plane-preview',
             'saved-planes-wrap',
+            'saved-plane-details-wrap',
             'saved-plane-distances-wrap',
             'saved-plane-angles-wrap',
         ];

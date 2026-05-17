@@ -231,10 +231,24 @@ Object.assign(App, {
             this.activePlaneId = nextValidPlane ? nextValidPlane.id : null;
         }
 
+        if (String(this.activePlaneDetailsId) === String(id)) {
+            this.activePlaneDetailsId = null;
+        }
+
         this._renderPlaneManagement();
         this._renderSelectionToolbar();
         this._updateSelectionPreview();
     },
+    
+    togglePlaneDetails(id) {
+        if (String(this.activePlaneDetailsId) === String(id)) {
+            this.activePlaneDetailsId = null;
+        } else {
+            this.activePlaneDetailsId = id;
+        }
+    
+        this._renderPlaneManagement();
+    },    
 
     removeSavedPlaneDistance(id) {
         this.savedPlaneDistances = this.savedPlaneDistances.filter(
@@ -297,6 +311,7 @@ Object.assign(App, {
     _renderPlaneManagement() {
         this._renderCurrentPlanePreview();
         this._renderSavedPlanesTable();
+        this._renderSavedPlaneDetails();
         this._renderSavedPlaneDistancesTable();
         this._renderSavedPlaneAnglesTable();
         this._syncActivePlaneViewer();
@@ -417,6 +432,12 @@ Object.assign(App, {
                             set active
                         </button>
                         <button
+                            class="btn-small plane-details"
+                            data-id="${plane.id}"
+                        >
+                            ${String(this.activePlaneDetailsId) === String(plane.id) ? 'hide details' : 'details'}
+                        </button>
+                        <button
                             class="btn-small plane-save-angle"
                             data-id="${plane.id}"
                             ${invalid || !activePlane || isActive || angleExists ? 'disabled' : ''}
@@ -448,6 +469,13 @@ Object.assign(App, {
             });
         });
 
+        container.querySelectorAll('.plane-details').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                this.togglePlaneDetails(btn.dataset.id);
+            });
+        });
+
         container.querySelectorAll('.plane-save-angle').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.stopPropagation();
@@ -461,6 +489,84 @@ Object.assign(App, {
                 this.removeSavedPlane(btn.dataset.id);
             });
         });
+    },
+
+    _renderSavedPlaneDetails() {
+        const container = document.getElementById('saved-plane-details-wrap');
+        if (!container) return;
+    
+        if (!this.activePlaneDetailsId) {
+            container.innerHTML = '';
+            return;
+        }
+    
+        const plane = this._getPlaneById(this.activePlaneDetailsId);
+    
+        if (!plane) {
+            container.innerHTML = '';
+            this.activePlaneDetailsId = null;
+            return;
+        }
+    
+        const atoms = this._getPlaneAtoms(plane);
+        const normal = plane.result.normal;
+        const centroid = plane.result.centroid;
+        const invalid = this._isPlaneInvalid(plane);
+    
+        let html = `
+            <div class="table-label">Plane details — ${plane.name}</div>
+            <div class="result-box" style="margin-bottom:10px">
+                <div>
+                    <b>Status:</b> ${invalid ? 'invalid' : 'valid'}
+                </div>
+                <div style="margin-top:4px;color:var(--text-muted)">
+                    Atoms: ${atoms.map(atom => atom.label).join(', ')}
+                </div>
+                <div style="margin-top:4px;color:var(--text-muted)">
+                    RMSD: ${plane.result.rmsd.toFixed(4)} Å
+                </div>
+                <div style="margin-top:4px;color:var(--text-muted)">
+                    Centroid:
+                    (${centroid.x.toFixed(4)}, ${centroid.y.toFixed(4)}, ${centroid.z.toFixed(4)})
+                </div>
+                <div style="margin-top:4px;color:var(--text-muted)">
+                    Normal:
+                    (${normal.x.toFixed(4)}, ${normal.y.toFixed(4)}, ${normal.z.toFixed(4)})
+                </div>
+            </div>
+        `;
+    
+        if (atoms.length >= 3) {
+            html += `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Atom</th>
+                            <th>Distance to plane (Å)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+    
+            atoms.forEach(atom => {
+                const d = this._distanceAtomToPlane(atom, plane.result);
+                const excluded = this.excludedAtoms.has(atom.index);
+    
+                html += `
+                    <tr class="${excluded ? 'inactive' : ''}">
+                        <td>${atom.label}</td>
+                        <td>${d.toFixed(4)}</td>
+                    </tr>
+                `;
+            });
+    
+            html += `
+                    </tbody>
+                </table>
+            `;
+        }
+    
+        container.innerHTML = html;
     },
 
     _renderSavedPlaneDistancesTable() {

@@ -744,11 +744,11 @@ const Tables = {
             });
         });
 
-        // Summary
+        // Summary by bond type
         let sh = '<div class="table-label">Summary</div>';
 
         sh += '<table class="data-table"><thead><tr>'
-            + '<th>Bond</th><th>Count</th><th>Min (Å)</th><th>Max (Å)</th><th>Mean (Å)</th>'
+            + '<th>Bond</th><th>Count</th><th>Min (Å)</th><th>Max (Å)</th><th>Mean (Å)</th><th>Std dev (Å)</th>'
             + '</tr></thead><tbody>';
 
         for (const [key, dists] of Object.entries(groups)) {
@@ -756,28 +756,14 @@ const Tables = {
 
             sh += `<tr><td>${key}</td><td>${s.n}</td>
                 <td>${s.min.toFixed(4)}</td><td>${s.max.toFixed(4)}</td>
-                <td>${s.mean.toFixed(4)}</td></tr>`;
+                <td>${s.mean.toFixed(4)}</td><td>${s.std.toFixed(4)}</td></tr>`;
         }
 
         sh += '</tbody></table>';
         summaryWrap.innerHTML = sh;
 
-        // Stats
-        const s = Chem.stats(bonds.map(b => b.dist));
-
-        let sthtml = '<div class="table-label">Statistics (all shown bonds)</div>';
-
-        sthtml += '<table class="data-table"><thead><tr>'
-            + '<th>n</th><th>Min</th><th>Max</th><th>Mean</th><th>Median</th><th>Std dev</th>'
-            + '</tr></thead><tbody>';
-
-        sthtml += `<tr><td>${s.n}</td>
-            <td>${s.min.toFixed(4)}</td><td>${s.max.toFixed(4)}</td>
-            <td>${s.mean.toFixed(4)}</td><td>${s.median.toFixed(4)}</td>
-            <td>${s.std.toFixed(4)}</td></tr>`;
-
-        sthtml += '</tbody></table>';
-        statsWrap.innerHTML = sthtml;
+        // No global statistics over mixed bond types.
+        statsWrap.innerHTML = '';
     },
 
     // --- Angles table ---
@@ -882,11 +868,11 @@ const Tables = {
             });
         });
 
-        // Summary
+        // Summary by angle type
         let sh = '<div class="table-label">Summary</div>';
 
         sh += '<table class="data-table"><thead><tr>'
-            + '<th>Angle type</th><th>Count</th><th>Min (°)</th><th>Max (°)</th><th>Mean (°)</th>'
+            + '<th>Angle type</th><th>Count</th><th>Min (°)</th><th>Max (°)</th><th>Mean (°)</th><th>Std dev (°)</th>'
             + '</tr></thead><tbody>';
 
         for (const [key, vals] of Object.entries(groups)) {
@@ -894,28 +880,14 @@ const Tables = {
 
             sh += `<tr><td>${key}</td><td>${s.n}</td>
                 <td>${s.min.toFixed(3)}</td><td>${s.max.toFixed(3)}</td>
-                <td>${s.mean.toFixed(3)}</td></tr>`;
+                <td>${s.mean.toFixed(3)}</td><td>${s.std.toFixed(3)}</td></tr>`;
         }
 
         sh += '</tbody></table>';
         summaryWrap.innerHTML = sh;
 
-        // Stats
-        const s = Chem.stats(angles.map(a => a.angle));
-
-        let sthtml = '<div class="table-label">Statistics (all shown angles)</div>';
-
-        sthtml += '<table class="data-table"><thead><tr>'
-            + '<th>n</th><th>Min</th><th>Max</th><th>Mean</th><th>Median</th><th>Std dev</th>'
-            + '</tr></thead><tbody>';
-
-        sthtml += `<tr><td>${s.n}</td>
-            <td>${s.min.toFixed(3)}</td><td>${s.max.toFixed(3)}</td>
-            <td>${s.mean.toFixed(3)}</td><td>${s.median.toFixed(3)}</td>
-            <td>${s.std.toFixed(3)}</td></tr>`;
-
-        sthtml += '</tbody></table>';
-        statsWrap.innerHTML = sthtml;
+        // No global statistics over mixed angle types.
+        statsWrap.innerHTML = '';
     },
 
     // --- Dihedral single-result box ---
@@ -1101,31 +1073,24 @@ const Tables = {
             for (const b of bonds) {
                 const key = [b.elI, b.elJ].sort().join('–');
 
-                if (!bondGroups[key]) bondGroups[key] = [];
+                if (!bondGroups[key]) {
+                    bondGroups[key] = [];
+                }
+
                 bondGroups[key].push(b.dist);
             }
 
             lines.push('### Bond Summary');
             lines.push('');
-            lines.push('| Bond | Count | Min (Å) | Max (Å) | Mean (Å) |');
-            lines.push('|------|-------|---------|---------|----------|');
+            lines.push('| Bond | Count | Min (Å) | Max (Å) | Mean (Å) | Std dev (Å) |');
+            lines.push('|------|-------|---------|---------|----------|-------------|');
 
             for (const [key, values] of Object.entries(bondGroups)) {
                 const s = Chem.stats(values);
 
-                lines.push(`| ${mdCell(key)} | ${s.n} | ${s.min.toFixed(4)} | ${s.max.toFixed(4)} | ${s.mean.toFixed(4)} |`);
+                lines.push(`| ${mdCell(key)} | ${s.n} | ${s.min.toFixed(4)} | ${s.max.toFixed(4)} | ${s.mean.toFixed(4)} | ${s.std.toFixed(4)} |`);
             }
 
-            lines.push('');
-
-            // Bond statistics over all exported bonds
-            const s = Chem.stats(bonds.map(b => b.dist));
-
-            lines.push('### Bond Statistics');
-            lines.push('');
-            lines.push('| n | Min (Å) | Max (Å) | Mean (Å) | Median (Å) | Std dev (Å) |');
-            lines.push('|---|---------|---------|----------|------------|-------------|');
-            lines.push(`| ${s.n} | ${s.min.toFixed(4)} | ${s.max.toFixed(4)} | ${s.mean.toFixed(4)} | ${s.median.toFixed(4)} | ${s.std.toFixed(4)} |`);
             lines.push('');
         }
 
@@ -1180,25 +1145,15 @@ const Tables = {
 
             lines.push('### Angle Summary');
             lines.push('');
-            lines.push('| Angle type | Count | Min (°) | Max (°) | Mean (°) |');
-            lines.push('|------------|-------|---------|---------|----------|');
+            lines.push('| Angle type | Count | Min (°) | Max (°) | Mean (°) | Std dev (°) |');
+            lines.push('|------------|-------|---------|---------|----------|-------------|');
 
             for (const [key, values] of Object.entries(angleGroups)) {
                 const s = Chem.stats(values);
 
-                lines.push(`| ${mdCell(key)} | ${s.n} | ${s.min.toFixed(3)} | ${s.max.toFixed(3)} | ${s.mean.toFixed(3)} |`);
+                lines.push(`| ${mdCell(key)} | ${s.n} | ${s.min.toFixed(3)} | ${s.max.toFixed(3)} | ${s.mean.toFixed(3)} | ${s.std.toFixed(3)} |`);
             }
 
-            lines.push('');
-
-            // Angle statistics over all exported angles
-            const s = Chem.stats(angles.map(a => a.angle));
-
-            lines.push('### Angle Statistics');
-            lines.push('');
-            lines.push('| n | Min (°) | Max (°) | Mean (°) | Median (°) | Std dev (°) |');
-            lines.push('|---|---------|---------|----------|------------|-------------|');
-            lines.push(`| ${s.n} | ${s.min.toFixed(3)} | ${s.max.toFixed(3)} | ${s.mean.toFixed(3)} | ${s.median.toFixed(3)} | ${s.std.toFixed(3)} |`);
             lines.push('');
         }
 

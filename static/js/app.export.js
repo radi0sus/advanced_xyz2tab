@@ -3,7 +3,7 @@
 Object.assign(App, {
 
     exportMd() {
-        const md = Tables.toMarkdown({
+        const md = Markdown.toMarkdown({
             parsed: this.parsed,
 
             bonds: this.filteredBonds,

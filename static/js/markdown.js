@@ -140,7 +140,9 @@ const Markdown = {
             return collator.compare(planeName(a.planeBId), planeName(b.planeBId));
         });
 
-        lines.push(`# xyz2tab — ${formula}`);
+        const formattedFormula = Format.chemicalFormula(formula);
+
+        lines.push(`# xyz2tab — ${formattedFormula}`);
         lines.push('');
 
         // --- Molecular information ---
@@ -152,7 +154,7 @@ const Markdown = {
             lines.push('');
         }
 
-        lines.push(`**Formula:** ${mdCell(formula)}  `);
+        lines.push(`**Formula:** ${mdCell(formattedFormula)}  `);
         lines.push(`**Formula weight:** ${fw.toFixed(3)} g/mol  `);
         lines.push(`**Atoms:** ${natoms}`);
         lines.push('');

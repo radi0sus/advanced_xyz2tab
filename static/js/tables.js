@@ -207,7 +207,7 @@ const Tables = {
 
         html += '</tbody></table>';
         html += `<div class="result-box" style="margin-top:8px">
-            <div style="margin-bottom:4px"><b>Formula:</b> ${formula}</div>
+            <div style="margin-bottom:4px"><b>Formula:</b> ${Format.chemicalFormula(formula)}</div>
             <div style="margin-bottom:4px"><b>Formula weight:</b> ${fw.toFixed(3)} g/mol</div>
             <div style="margin-bottom:4px"><b>Atoms:</b> ${natoms}</div>
             ${comment ? `<div><b>Comment:</b> ${comment}</div>` : ''}

@@ -193,7 +193,7 @@ const App = {
         document.getElementById('main-layout').classList.remove('hidden');
 
         // Info bar
-        document.getElementById('info-formula').textContent = formula;
+        document.getElementById('info-formula').textContent = Format.chemicalFormula(formula);
         document.getElementById('info-fw').textContent = fw.toFixed(2) + ' g/mol';
         document.getElementById('info-natoms').textContent = natoms + ' atoms';
 

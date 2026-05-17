@@ -1,3 +1,8 @@
+> [!TIP]
+> **advanced_xyz2tab** is available as a static browser-based web app for interactive `.xyz` structure analysis, including 3D molecular visualization, bond and angle tables, saved planes, atom-to-plane distances, plane angles, manual measurements, and Markdown/PNG export.  
+> 👉 Try it here: https://radi0sus.github.io/advanced_xyz2tab/  
+> 👉 Original CLI tool: https://github.com/radi0sus/xyz2tab
+
 # advanced_xyz2tab
 
 `advanced_xyz2tab` is a browser-based web application for analysing molecular structures from `.xyz` files. It is a port and further development of the original Python command-line tool `xyz2tab`.

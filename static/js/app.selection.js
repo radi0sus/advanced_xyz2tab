@@ -16,8 +16,6 @@ Object.assign(App, {
         bind('btn-save-angle', () => this.saveSelectedAngle());
         bind('btn-save-dihedral', () => this.saveSelectedDihedral());
 
-        // New saved-plane workflow.
-        // The methods are implemented in app.geometry.js in the next step.
         bind('btn-save-current-plane', () => {
             if (typeof this.saveCurrentPlane === 'function') {
                 this.saveCurrentPlane();
@@ -29,12 +27,6 @@ Object.assign(App, {
                 this.saveDistancesToActivePlane();
             }
         });
-
-        // Legacy buttons, if still present in older HTML.
-        bind('btn-set-plane1', () => this._setPlaneFromCentralSelection(1));
-        bind('btn-set-plane2', () => this._setPlaneFromCentralSelection(2));
-        bind('btn-dist-plane1', () => this._measureSelectionToPlane(1));
-        bind('btn-dist-plane2', () => this._measureSelectionToPlane(2));
     },
 
     _toggleCentralSelection(idx) {
@@ -161,26 +153,15 @@ Object.assign(App, {
         setDisabled('btn-save-angle', n !== 3);
         setDisabled('btn-save-dihedral', n !== 4);
 
-        // New plane workflow.
-        // Save current plane needs at least 3 selected atoms and a geometry implementation.
         setDisabled(
             'btn-save-current-plane',
             n < 3 || !hasSaveCurrentPlane
         );
 
-        // Save distance to active plane needs at least 1 atom, an active plane,
-        // and a geometry implementation.
         setDisabled(
             'btn-save-plane-distance',
             n < 1 || !activePlane || !hasSaveDistancesToActivePlane
         );
-
-        // Legacy buttons, if present.
-        setDisabled('btn-set-plane1', n < 3);
-        setDisabled('btn-set-plane2', n < 3);
-
-        setDisabled('btn-dist-plane1', n < 1 || !this.plane1Result);
-        setDisabled('btn-dist-plane2', n < 1 || !this.plane2Result);
     },
 
     _showSelectionOutput(html) {

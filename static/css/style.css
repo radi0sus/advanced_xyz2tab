@@ -26,9 +26,6 @@
     --danger: #9e2525;
     --danger-light: #f9e4e4;
 
-    --plane1-color: #174a78;
-    --plane2-color: #9e2525;
-
     --viewer-bg: #f6f5f1;
     --viewer-panel-bg: #eceae4;
     --viewer-controls-bg: #e4e1d9;
@@ -85,9 +82,6 @@
 
         --danger: #ff8f8f;
         --danger-light: #421f1f;
-
-        --plane1-color: #82b8ef;
-        --plane2-color: #ff8f8f;
 
         --viewer-bg: #1a1a1a;
         --viewer-panel-bg: #161616;
@@ -974,10 +968,7 @@ th.sortable-th.sorted .sort-indicator {
 #angles-table-wrap .data-table td:nth-child(5),
 #manual-distances-wrap .data-table td:nth-child(3),
 #manual-angles-wrap .data-table td:nth-child(3),
-#manual-dihedrals-wrap .data-table td:nth-child(3),
-#plane1-result .data-table td:nth-child(2),
-#plane2-result .data-table td:nth-child(2),
-#plane2-to-plane1-result .data-table td:nth-child(2) {
+#manual-dihedrals-wrap .data-table td:nth-child(3) {
     font-weight: 650;
     color: var(--text);
 }
@@ -1105,16 +1096,7 @@ th.sortable-th.sorted .sort-indicator {
     margin-top: 12px;
 }
 
-/* Plane & dihedral UI */
-.plane-block {
-    margin-bottom: 16px;
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    flex-shrink: 0;
-    background: var(--surface);
-}
-
+/* Geometry / dihedral UI */
 .plane-header {
     display: flex;
     align-items: center;
@@ -1126,14 +1108,6 @@ th.sortable-th.sorted .sort-indicator {
     font-weight: 600;
     font-size: 13.5px;
     flex: 1;
-}
-
-#plane1-block {
-    border-left: 3px solid var(--plane1-color);
-}
-
-#plane2-block {
-    border-left: 3px solid var(--plane2-color);
 }
 
 .chip-row {
@@ -1170,16 +1144,6 @@ th.sortable-th.sorted .sort-indicator {
     color: var(--danger);
 }
 
-.chip.plane2 {
-    background: var(--danger-light);
-    border-color: var(--plane2-color);
-    color: var(--plane2-color);
-}
-
-.chip-remove.plane2:hover {
-    color: var(--danger);
-}
-
 .result-box {
     background: var(--bg);
     border-radius: var(--radius-md);
@@ -1195,13 +1159,6 @@ th.sortable-th.sorted .sort-indicator {
     font-weight: 700;
     font-size: 15px;
     color: var(--accent);
-}
-
-#plane-angle-result {
-    padding: 10px;
-    font-size: 14px;
-    text-align: center;
-    flex-shrink: 0;
 }
 
 /* Mode indicator */

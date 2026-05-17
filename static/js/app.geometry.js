@@ -1,4 +1,4 @@
-// app.geometry.js — saved-plane system and geometry compatibility
+// app.geometry.js — saved-plane system and dihedral result handling
 
 Object.assign(App, {
 
@@ -88,7 +88,7 @@ Object.assign(App, {
         return html;
     },
 
-    // --- Main saved-plane actions ---
+    // --- Saved-plane actions ---
 
     saveCurrentPlane() {
         const atoms = this._getSelectedAtoms();
@@ -624,7 +624,7 @@ Object.assign(App, {
             });
         });
     },
-    
+
     _syncActivePlaneViewer() {
         const activePlane = this._getActivePlane();
 
@@ -638,84 +638,7 @@ Object.assign(App, {
         Viewer.clearPlane(2);
     },
 
-    // --- Legacy Plane 1/2 compatibility stubs ---
-
-    _measureSelectionToPlane(num) {
-        const atoms = this._getSelectedAtoms();
-        if (!atoms.length) return;
-
-        const plane = num === 1 ? this.plane1Result : this.plane2Result;
-        if (!plane) return;
-
-        let html = `
-            <div class="selection-output-title">
-                Distances to Plane ${num}
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Atom</th>
-                        <th>Distance / Å</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        for (const atom of atoms) {
-            const d = this._distanceAtomToPlane(atom, plane);
-
-            html += `
-                <tr>
-                    <td>${atom.label}</td>
-                    <td>${d.toFixed(4)}</td>
-                </tr>
-            `;
-        }
-
-        html += `
-                </tbody>
-            </table>
-        `;
-
-        this._showSelectionOutput(html);
-        this._finishSelectionAction();
-    },
-
-    _setPlaneFromCentralSelection(num) {
-        const atoms = this._getSelectedAtoms();
-        if (atoms.length < 3) return;
-
-        const plane = Chem.calcPlane(atoms);
-        if (!plane) return;
-
-        if (num === 1) {
-            this.plane1Atoms = atoms;
-            this.plane1Result = plane;
-        } else {
-            this.plane2Atoms = atoms;
-            this.plane2Result = plane;
-        }
-
-        this._refreshGeometryResults();
-        this._finishSelectionAction();
-    },
-
-    clearPlane(num) {
-        if (num === 1) {
-            this.plane1Atoms = [];
-            this.plane1Result = null;
-            Viewer.clearPlane(1);
-        } else {
-            this.plane2Atoms = [];
-            this.plane2Result = null;
-            Viewer.clearPlane(2);
-        }
-
-        this._refreshGeometryResults();
-        this._clearSelection();
-    },
-
-    // --- Dihedral compatibility ---
+    // --- Dihedral ---
 
     _updateChips(type) {
         if (type !== 'dihedral') return;

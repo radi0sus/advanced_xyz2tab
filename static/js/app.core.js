@@ -25,14 +25,7 @@ const App = {
     manualDihedrals: [],     // saved dihedral measurements
     _nextMeasurementId: 1,
 
-    // Legacy Plane 1/2 state kept during migration
-    plane1Atoms: [],
-    plane2Atoms: [],
-    plane1Result: null,
-    plane2Result: null,
-    planeAngle: null,
-
-    // New saved-plane system
+    // Saved-plane system
     savedPlanes: [],
     activePlaneId: null,
     savedPlaneDistances: [],
@@ -138,15 +131,6 @@ const App = {
             this.recalcBonds();
         });
 
-        // Plane clear buttons
-        document.getElementById('btn-plane1-clear').addEventListener('click', () => {
-            this.clearPlane(1);
-        });
-
-        document.getElementById('btn-plane2-clear').addEventListener('click', () => {
-            this.clearPlane(2);
-        });
-
         // Dihedral clear button
         document.getElementById('btn-dihedral-clear').addEventListener('click', () => {
             this.clearDihedral();
@@ -232,14 +216,7 @@ const App = {
         this.manualDihedrals = [];
         this._nextMeasurementId = 1;
 
-        // Reset legacy plane state
-        this.plane1Atoms = [];
-        this.plane2Atoms = [];
-        this.plane1Result = null;
-        this.plane2Result = null;
-        this.planeAngle = null;
-
-        // Reset new saved-plane state
+        // Reset saved-plane state
         this.savedPlanes = [];
         this.activePlaneId = null;
         this.savedPlaneDistances = [];
@@ -256,15 +233,9 @@ const App = {
         Viewer.clearPlane(2);
 
         // Clear result areas
-        this._updateChips('plane1');
-        this._updateChips('plane2');
         this._updateChips('dihedral');
 
         const clearIds = [
-            'plane1-result',
-            'plane2-result',
-            'plane2-to-plane1-result',
-            'plane-angle-result',
             'dihedral-result',
             'current-plane-preview',
             'saved-planes-wrap',
@@ -499,19 +470,6 @@ const App = {
         this._highlightedAtoms = new Set(
             [...this._highlightedAtoms].filter(atomIdx => !this.excludedAtoms.has(Number(atomIdx)))
         );
-
-        // If a plane contains an excluded atom, clear that plane.
-        if (this.plane1Atoms.some(atom => this.excludedAtoms.has(atom.index))) {
-            this.plane1Atoms = [];
-            this.plane1Result = null;
-            Viewer.clearPlane(1);
-        }
-
-        if (this.plane2Atoms.some(atom => this.excludedAtoms.has(atom.index))) {
-            this.plane2Atoms = [];
-            this.plane2Result = null;
-            Viewer.clearPlane(2);
-        }
 
         // If current dihedral contains an excluded atom, clear it.
         if (this.dihedralAtoms.some(atom => this.excludedAtoms.has(atom.index))) {

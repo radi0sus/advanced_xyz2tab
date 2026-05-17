@@ -99,17 +99,44 @@ const Chem = {
     },
 
     // --- Dihedral angle (A-B-C-D) ---
+    // Returns signed torsion angle in degrees in the range [-180, 180].
     calcDihedral(A, B, C, D) {
-        const b1 = this._vec(A, B);
-        const b2 = this._vec(B, C);
-        const b3 = this._vec(C, D);
-        const n1 = this._cross(b1, b2);
-        const n2 = this._cross(b2, b3);
-        const m1 = this._cross(n1, b2);
-        const b2len = Math.sqrt(b2.x**2 + b2.y**2 + b2.z**2);
-        const b2n = { x: b2.x/b2len, y: b2.y/b2len, z: b2.z/b2len };
-        const x = this._dot(n1, n2);
-        const y = this._dot(m1, n2);
+        // Vectors along the central B-C bond convention.
+        const b0 = this._vec(B, A); // A - B
+        const b1 = this._vec(B, C); // C - B
+        const b2 = this._vec(C, D); // D - C
+
+        const b1len = Math.sqrt(b1.x ** 2 + b1.y ** 2 + b1.z ** 2);
+
+        if (b1len === 0) {
+            return Number.NaN;
+        }
+
+        const b1n = {
+            x: b1.x / b1len,
+            y: b1.y / b1len,
+            z: b1.z / b1len,
+        };
+
+        // Project b0 and b2 onto the plane perpendicular to b1.
+        const b0Dot = this._dot(b0, b1n);
+        const b2Dot = this._dot(b2, b1n);
+
+        const v = {
+            x: b0.x - b0Dot * b1n.x,
+            y: b0.y - b0Dot * b1n.y,
+            z: b0.z - b0Dot * b1n.z,
+        };
+
+        const w = {
+            x: b2.x - b2Dot * b1n.x,
+            y: b2.y - b2Dot * b1n.y,
+            z: b2.z - b2Dot * b1n.z,
+        };
+
+        const x = this._dot(v, w);
+        const y = this._dot(this._cross(b1n, v), w);
+
         return Math.atan2(y, x) * 180 / Math.PI;
     },
 

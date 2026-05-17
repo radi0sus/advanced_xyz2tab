@@ -479,9 +479,9 @@ body.resizing-vertical {
     font-size: 12.5px;
     line-height: 1.35;
     color: var(--text);
-    height: 96px;
-    min-height: 96px;
-    max-height: 96px;
+    height: 120px;
+    min-height: 120px;
+    max-height: 120px;
     overflow: auto;
     flex-shrink: 0;
 }

@@ -123,6 +123,7 @@
                 <button class="tab active" data-tab="bonds">Bonds</button>
                 <button class="tab" data-tab="angles">Angles</button>
                 <button class="tab" data-tab="plane">Planes</button>
+                <button class="tab" data-tab="ring">Ring analysis</button>
                 <button class="tab" data-tab="dihedral">Dihedral</button>
                 <button class="tab" data-tab="info">Info</button>
             </div>
@@ -151,6 +152,9 @@
                     <b>Save current plane</b>.
                     The saved plane becomes the active reference plane.
                     Select one or more atoms to save distances to the active plane.
+                    Selecting exactly 5 or 6 atoms (in ring order) additionally
+                    enables ring puckering analysis — see the
+                    <b>Ring analysis</b> tab.
                 </div>
             
                 <div id="current-plane-preview"></div>
@@ -163,6 +167,26 @@
             
                 <div id="saved-plane-angles-wrap"></div>
             
+            </div>
+
+            <!-- Tab: Ring analysis -->
+            <div id="tab-ring" class="tab-content">
+
+                <div class="result-box" style="margin-bottom:10px">
+                    Select 5 atoms (5-ring) or 6 atoms (6-ring) <b>in ring
+                    connectivity order</b>, then use
+                    <b>Save current plane/ring</b> in the selection toolbar.
+                    Cremer-Pople puckering parameters (Q, θ, φ₂) are computed
+                    and the closest conformational family (chair, boat,
+                    twist-boat, envelope, half-chair for 6-rings; envelope or
+                    twist for 5-rings) is shown live during selection and
+                    stored here once saved.
+                </div>
+
+                <div id="saved-rings-wrap"></div>
+
+                <div id="saved-ring-details-wrap"></div>
+
             </div>
             
             <!-- Tab: Dihedral -->
@@ -225,6 +249,7 @@
 <script src="static/js/app.selection.js"></script>
 <script src="static/js/app.measurements.js"></script>
 <script src="static/js/app.geometry.js"></script>
+<script src="static/js/app.ring.js"></script>
 <script src="static/js/app.export.js"></script>
 <script src="static/js/main.js"></script>
 

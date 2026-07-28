@@ -17,6 +17,8 @@ const Markdown = {
             savedPlaneDistances = [],
             savedPlaneAngles = [],
 
+            savedRings = [],
+
             dihedralAtoms = [],
             dihedralAngle = null,
 
@@ -76,6 +78,28 @@ const Markdown = {
             if (!plane || !plane.atomIndices) return true;
 
             return plane.atomIndices.some(idx => excludedAtoms.has(Number(idx)));
+        };
+
+        const ringAtoms = ring => {
+            if (!ring || !ring.atomIndices) return [];
+
+            return ring.atomIndices
+                .map(idx => getAtom(idx))
+                .filter(Boolean);
+        };
+
+        const isRingInvalid = ring => {
+            if (!ring || !ring.atomIndices) return true;
+
+            return ring.atomIndices.some(idx => excludedAtoms.has(Number(idx)));
+        };
+
+        const ringConformationLabel = result => {
+            if (!result || !result.classification) return '—';
+
+            const c = result.classification;
+            if (c.symbol === '—') return c.family;
+            return c.approximate ? `${c.family} (${c.symbol}, approx.)` : `${c.family} (${c.symbol})`;
         };
 
         const distanceAtomToPlane = (atom, planeResult) => {
@@ -508,6 +532,63 @@ const Markdown = {
             });
 
             lines.push('');
+        }
+
+        // --- Saved rings (Cremer-Pople puckering analysis) ---
+        if (savedRings.length > 0) {
+            lines.push('## Ring Analysis (Cremer-Pople)');
+            lines.push('');
+
+            lines.push('| # | Name | Size | Atoms | Q (Å) | θ (°) | φ₂ (°) | Conformation | Status |');
+            lines.push('|---|------|------|-------|-------|-------|--------|--------------|--------|');
+
+            savedRings.forEach((ring, i) => {
+                const atomsForRing = ringAtoms(ring);
+                const result = ring.result;
+                const invalid = isRingInvalid(ring);
+
+                const excludedLabels = atomsForRing
+                    .filter(atom => excludedAtoms.has(atom.index))
+                    .map(atom => atom.label);
+
+                const status = invalid
+                    ? (excludedLabels.length ? `invalid: excluded ${excludedLabels.join(', ')}` : 'invalid')
+                    : 'valid';
+
+                lines.push(
+                    `| ${i + 1} | ${mdCell(ring.name)} | ${result.N} | ${mdCell(atomsForRing.map(a => a.label).join(', '))} | ${result.Q.toFixed(4)} | ${result.N === 6 ? result.theta.toFixed(2) : '—'} | ${result.phi2.toFixed(2)} | ${mdCell(ringConformationLabel(result))} | ${mdCell(status)} |`
+                );
+            });
+
+            lines.push('');
+            lines.push(
+                '*Family assignment (chair / boat / twist-boat / envelope / ' +
+                'half-chair) uses equal 45°/60° bands around the canonical ' +
+                'Cremer-Pople reference latitudes (the 0/45/90/135/180 grid used ' +
+                'e.g. in Protti et al., ChemPlusChem 2026, 91, e70192) and is an ' +
+                'approximation rather than an exact match to one of the 38 ' +
+                'canonical IUPAC forms.*'
+            );
+            lines.push('');
+
+            for (const ring of savedRings) {
+                const atomsForRing = ringAtoms(ring);
+                const result = ring.result;
+
+                if (!result || !result.zDisplacements) continue;
+
+                lines.push(`### ${mdCell(ring.name)} — atom displacements from mean plane`);
+                lines.push('');
+                lines.push('| Atom | z (Å) |');
+                lines.push('|------|-------|');
+
+                atomsForRing.forEach((atom, idx) => {
+                    const z = result.zDisplacements[idx];
+                    lines.push(`| ${mdCell(atom.label)} | ${z !== undefined ? z.toFixed(4) : '—'} |`);
+                });
+
+                lines.push('');
+            }
         }
 
         return lines.join('\n');

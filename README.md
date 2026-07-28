@@ -1,5 +1,5 @@
 > [!TIP]
-> **advanced_xyz2tab** is available as a static browser-based web app for interactive `.xyz` structure analysis, including 3D molecular visualization, bond and angle tables, saved planes, atom-to-plane distances, plane angles, manual measurements, and Markdown/PNG export.  
+> **advanced_xyz2tab** is available as a static browser-based web app for interactive `.xyz` structure analysis, including 3D molecular visualization, bond and angle tables, saved planes, atom-to-plane distances, plane angles, Cremer-Pople ring puckering analysis, manual measurements, and Markdown/PNG export.  
 > 👉 Try it here: https://radi0sus.github.io/advanced_xyz2tab/  
 > 👉 Original CLI tool: https://github.com/radi0sus/xyz2tab
 
@@ -26,6 +26,8 @@ No installation and no Python environment are required for normal use.
   - best-fit planes
   - atom distances to saved planes
   - angles between saved planes
+  - Cremer-Pople ring puckering parameters (Q, θ, φ₂) for 5- and 6-membered rings
+  - approximate ring conformation classification (chair, boat, twist-boat, envelope, half-chair, twist)
   - manual distances
   - manual angles
   - manual dihedrals
@@ -34,6 +36,7 @@ No installation and no Python environment are required for normal use.
 - Atom-wise exclusion from analysis
 - Element filter for active elements
 - Saved active-plane workflow
+- Saved ring puckering analysis workflow
 - Markdown export
 - PNG export of the 3D viewer
 - Light/dark theme via system preference
@@ -162,6 +165,10 @@ Available actions depend on the number of selected atoms.
 
 - `Save current plane`
 
+### Exactly five or six atoms, selected in ring order
+
+- `Save current plane/ring` (saves both the best-fit plane and a Cremer-Pople ring puckering analysis)
+
 If an active saved plane exists, selecting one or more atoms additionally enables:
 
 - `Save dist. to active plane`
@@ -203,6 +210,42 @@ The Plane tab contains:
 - saved plane angles
 
 Saved planes are not deleted automatically if an atom is excluded. Instead, planes and dependent measurements are marked as invalid if they involve excluded atoms.
+
+## Ring puckering analysis (Cremer-Pople)
+
+The `Ring analysis` tab computes Cremer-Pople ring puckering parameters for 5- and 6-membered rings, based on:
+
+> D. Cremer, J. A. Pople, *J. Am. Chem. Soc.* **1975**, *97*, 1354-1358.
+
+### Basic workflow
+
+1. Select exactly 5 or 6 atoms **in ring connectivity order** (the order they were selected in, not sorted by atom index).
+2. The selection toolbar button becomes `Save current plane/ring`.
+3. A live preview of the puckering parameters and conformation is shown while atoms are selected.
+4. Click `Save current plane/ring` to store both a best-fit plane and a ring puckering analysis entry.
+5. Saved rings appear in the `Ring analysis` tab, with an expandable per-atom out-of-plane displacement table.
+
+### Reported parameters
+
+- 6-membered rings: total puckering amplitude `Q`, polar angle `θ`, phase angle `φ₂`
+- 5-membered rings: puckering amplitude `q₂` (reported as `Q`), phase angle `φ₂`
+
+### Conformation classification
+
+Rings are assigned to one of the standard general conformation families:
+
+- 6-membered rings: Chair (C), Boat (B), Twist-boat (S), Envelope (E), Half-chair (H)
+- 5-membered rings: Envelope (E), Twist (T)
+
+The 6-ring classification uses equal 45°/60° bands around the canonical Cremer-Pople reference latitudes (θ = 0°/45°/90°/135°/180°), the same grid used for example in the pyranoside mapping of:
+
+> F. Protti, L. Toma, G. Zanoni, E. Casali, *ChemPlusChem* **2026**, *91*, e70192 (CALPUCK).
+
+This is an approximation to the general conformation family and not an exact match to one of the 38 canonical IUPAC reference forms. The 5-ring classification (Envelope vs. Twist, every 18° along the pseudorotation phase) follows the standard Altona-Sundaralingam convention and is exact for that family assignment.
+
+Rings with negligible puckering amplitude (`Q` &lt; 0.05 Å) are reported as "Planar".
+
+Saved rings are not deleted automatically if an atom is excluded. Instead, they are marked as invalid, the same way as saved planes.
 
 ## Atom exclusion
 
@@ -269,6 +312,7 @@ The Markdown export includes, depending on available data:
 - saved planes
 - saved plane distances
 - saved plane angles
+- saved rings (Cremer-Pople parameters and per-atom out-of-plane displacements)
 
 Bond and angle summaries are grouped by bond type or angle type and include:
 
@@ -284,6 +328,7 @@ The export uses a fixed logical sorting:
 - angles are sorted by angle type and angle
 - saved plane distances are sorted by plane and atom
 - saved plane angles are sorted by plane names
+- saved rings remain in saved order
 - manual measurements remain in saved order
 
 ### PNG export
@@ -341,5 +386,6 @@ See `LICENSE` for details.
 - Bond detection is based on covalent radii and may require manual correction.
 - Saved plane names are currently generated automatically.
 - Plane tables are currently not sortable.
+- Ring puckering conformation classification is an approximate, band-based assignment to the general conformation family, not an exact match to canonical IUPAC reference forms.
 - CSV and JSON export are not yet implemented.
 - Analysis state is currently stored only during the active browser session.

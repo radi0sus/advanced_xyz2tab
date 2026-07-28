@@ -17,8 +17,22 @@ Object.assign(App, {
         bind('btn-save-dihedral', () => this.saveSelectedDihedral());
 
         bind('btn-save-current-plane', () => {
+            const atoms = this._getSelectedAtoms();
+            const n = atoms.length;
+            const ringEligible = n === 5 || n === 6;
+
+            let ringHtml = '';
+
+            if (ringEligible && typeof this.saveCurrentRing === 'function') {
+                const ring = this.saveCurrentRing(atoms);
+
+                if (ring && typeof this._renderRingSummaryHtml === 'function') {
+                    ringHtml = this._renderRingSummaryHtml(ring.result);
+                }
+            }
+
             if (typeof this.saveCurrentPlane === 'function') {
-                this.saveCurrentPlane();
+                this.saveCurrentPlane(ringHtml);
             }
         });
 
@@ -157,6 +171,13 @@ Object.assign(App, {
             'btn-save-current-plane',
             n < 3 || !hasSaveCurrentPlane
         );
+
+        const saveCurrentPlaneBtn = document.getElementById('btn-save-current-plane');
+        if (saveCurrentPlaneBtn) {
+            saveCurrentPlaneBtn.textContent = (n === 5 || n === 6)
+                ? 'Save current plane/ring'
+                : 'Save current plane';
+        }
 
         setDisabled(
             'btn-save-plane-distance',
@@ -307,9 +328,13 @@ Object.assign(App, {
 
         if (atoms.length >= 5) {
             const plane = Chem.calcPlane(atoms);
+            const ringEligible = atoms.length === 5 || atoms.length === 6;
+            const ringResult = ringEligible ? Chem.calcRingPucker(atoms) : null;
 
             let html = `
-                <div class="selection-output-title">Plane preview</div>
+                <div class="selection-output-title">
+                    ${ringEligible ? 'Plane / ring preview' : 'Plane preview'}
+                </div>
                 <div style="margin-bottom:3px;color:var(--text-muted)">
                     ${atoms.length} selected atoms
                 </div>
@@ -325,6 +350,10 @@ Object.assign(App, {
                         <span class="result-value">${planeAngle.toFixed(3)}°</span>
                     </div>
                 `;
+            }
+
+            if (ringResult && typeof this._renderRingSummaryHtml === 'function') {
+                html += this._renderRingSummaryHtml(ringResult);
             }
 
             this._showSelectionOutput(html);

@@ -90,7 +90,7 @@ Object.assign(App, {
 
     // --- Saved-plane actions ---
 
-    saveCurrentPlane() {
+    saveCurrentPlane(extraOutputHtml = '') {
         const atoms = this._getSelectedAtoms();
 
         if (atoms.length < 3) return;
@@ -162,6 +162,7 @@ Object.assign(App, {
                     ${angleWasSaved ? '(saved)' : ''}
                 </div>
             ` : ''}
+            ${extraOutputHtml || ''}
         `);
 
         this._finishSelectionAction({ preserveOutput: true });
@@ -795,6 +796,10 @@ Object.assign(App, {
 
         if (typeof this._renderPlaneManagement === 'function') {
             this._renderPlaneManagement();
+        }
+
+        if (typeof this._renderRingAnalysis === 'function') {
+            this._renderRingAnalysis();
         }
 
         this._renderSelectionToolbar();

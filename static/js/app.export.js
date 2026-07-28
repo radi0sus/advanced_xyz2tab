@@ -18,6 +18,8 @@ Object.assign(App, {
             savedPlaneDistances: this.savedPlaneDistances,
             savedPlaneAngles: this.savedPlaneAngles,
 
+            savedRings: this.savedRings,
+
             dihedralAtoms: this.dihedralAtoms,
             dihedralAngle: this.dihedralAngle,
 

@@ -34,6 +34,11 @@ const App = {
     _nextPlaneId: 1,
     _nextPlaneMeasurementId: 1,
 
+    // Saved-ring system (Cremer-Pople puckering analysis)
+    savedRings: [],
+    activeRingDetailsId: null,
+    _nextRingId: 1,
+
     // Dihedral result state
     dihedralAtoms: [],
     dihedralAngle: null,
@@ -226,6 +231,11 @@ const App = {
         this._nextPlaneId = 1;
         this._nextPlaneMeasurementId = 1;
 
+        // Reset saved-ring state
+        this.savedRings = [];
+        this.activeRingDetailsId = null;
+        this._nextRingId = 1;
+
         // Reset dihedral state
         this.dihedralAtoms = [];
         this.dihedralAngle = null;
@@ -244,6 +254,8 @@ const App = {
             'saved-plane-details-wrap',
             'saved-plane-distances-wrap',
             'saved-plane-angles-wrap',
+            'saved-rings-wrap',
+            'saved-ring-details-wrap',
         ];
 
         clearIds.forEach(id => {
@@ -256,6 +268,10 @@ const App = {
 
         if (typeof this._renderPlaneManagement === 'function') {
             this._renderPlaneManagement();
+        }
+
+        if (typeof this._renderRingAnalysis === 'function') {
+            this._renderRingAnalysis();
         }
 
         // Initial bond & angle calculation

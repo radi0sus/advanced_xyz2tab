@@ -14,6 +14,7 @@ const App = {
     atomListSearch: '',
     excludedAtoms: new Set(),
     atomIndexStart: 0,
+    _scrollToAtomIdx: null,
 
     // Central selection
     selection: [],
@@ -94,6 +95,20 @@ const App = {
         document.getElementById('btn-toggle-bond-labels').addEventListener('click', e => {
             const on = Viewer.toggleBondLabels();
             e.target.classList.toggle('active', on);
+        });
+
+        // Axes gizmo / element legend overlays — both default on, styled
+        // and behaving like the other viewer-controls toggle buttons.
+        document.getElementById('btn-toggle-axes').addEventListener('click', e => {
+            const on = !e.target.classList.contains('active');
+            e.target.classList.toggle('active', on);
+            Viewer.setShowAxes(on);
+        });
+
+        document.getElementById('btn-toggle-legend').addEventListener('click', e => {
+            const on = !e.target.classList.contains('active');
+            e.target.classList.toggle('active', on);
+            Viewer.setShowLegend(on);
         });
 
         // Atom label index start: 0 or 1
@@ -435,7 +450,10 @@ const App = {
             this._highlightedAtoms,
             this.excludedAtoms,
             this.activeElements,
+            this._scrollToAtomIdx,
         );
+
+        this._scrollToAtomIdx = null;
 
         const resetBtn = document.getElementById('btn-reset-exclusions');
         if (resetBtn) {

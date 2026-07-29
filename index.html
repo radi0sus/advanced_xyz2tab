@@ -17,8 +17,8 @@
             <label id="index-start-control" title="Atom label numbering">
                 <span>Index</span>
                 <select id="atom-index-start">
-                    <option value="0" selected>from 0</option>
-                    <option value="1">from 1</option>
+                    <option value="0">from 0</option>
+                    <option value="1" selected>from 1</option>
                 </select>
             </label>
         
@@ -44,13 +44,19 @@
         <div id="viewer-panel">
 
             <!-- 3D Viewer -->
-            <div id="viewer-container"></div>
+            <div id="viewer-outer">
+                <div id="viewer-container"></div>
+                <div id="viewer-legend" class="viewer-legend"></div>
+                <canvas id="axes-gizmo" class="axes-gizmo" width="108" height="108"></canvas>
+            </div>
 
             <!-- Viewer controls -->
             <div id="viewer-controls">
                 <button id="btn-reset-view" class="btn-small">Reset view</button>
                 <button id="btn-toggle-atom-labels" class="btn-small">Atom names</button>
                 <button id="btn-toggle-bond-labels" class="btn-small">Bond lengths</button>
+                <button id="btn-toggle-axes" class="btn-small active" title="Show a small rotating X/Y/Z axis indicator">Axes</button>
+                <button id="btn-toggle-legend" class="btn-small active" title="Show element color legend in the 3D viewer">Legend</button>
             </div>
 
             <!-- Selection / Geometry toolbar -->

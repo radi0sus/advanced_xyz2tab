@@ -1,5 +1,89 @@
 // viewer.js — 3Dmol wrapper
 
+// --- Axes gizmo helpers (ported from mo-viewer's "Show axes" feature) ---
+// A small 2D canvas overlay drawn on top of the 3Dmol canvas, showing the
+// molecule-frame X/Y/Z unit vectors as colored arrows that rotate together
+// with the model. Kept as plain module-scope helpers (no `this`) since they
+// only do 2D canvas math; Viewer just supplies the live view quaternion.
+const GIZMO_HOME = {
+    x: { x: 1, y: 0, z: 0 },
+    y: { x: 0, y: 1, z: 0 },
+    z: { x: 0, y: 0, z: 1 },
+};
+const GIZMO_COLORS = { x: '#e6483c', y: '#2fae4e', z: '#2f8fe6' };
+
+function gizmoQuatRotate(q, v) {
+    const tx = 2 * (q.y * v.z - q.z * v.y);
+    const ty = 2 * (q.z * v.x - q.x * v.z);
+    const tz = 2 * (q.x * v.y - q.y * v.x);
+    return {
+        x: v.x + q.w * tx + (q.y * tz - q.z * ty),
+        y: v.y + q.w * ty + (q.z * tx - q.x * tz),
+        z: v.z + q.w * tz + (q.x * ty - q.y * tx),
+    };
+}
+
+function drawAxesTriad(ctx, q, cx, cy, len, style) {
+    const { lineWidth, headLen, fontSize, labelPad } = style;
+
+    const axes = ['x', 'y', 'z'].map(key => ({
+        key,
+        rotated: gizmoQuatRotate(q, GIZMO_HOME[key]),
+        color: GIZMO_COLORS[key],
+    }));
+
+    // Draw back-to-front so nearer axes overlap farther ones.
+    axes.sort((a, b) => a.rotated.z - b.rotated.z);
+
+    for (const axis of axes) {
+        const endX = cx + axis.rotated.x * len;
+        const endY = cy - axis.rotated.y * len;
+        const depth = (axis.rotated.z + 1) / 2; // 0 (far) .. 1 (near)
+        const alpha = 0.55 + depth * 0.45;
+
+        // Cap the arrowhead length to a fraction of this axis's own
+        // projected (screen-space) length, so a strongly foreshortened
+        // axis doesn't have its head swallow the whole shaft.
+        const projLen = Math.hypot(endX - cx, endY - cy);
+        const effHeadLen = Math.min(headLen, projLen * 0.45);
+        const angle = Math.atan2(endY - cy, endX - cx);
+        const shaftEndX = endX - effHeadLen * Math.cos(angle);
+        const shaftEndY = endY - effHeadLen * Math.sin(angle);
+
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = axis.color;
+        ctx.fillStyle = axis.color;
+        ctx.lineWidth = lineWidth;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(shaftEndX, shaftEndY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(
+            endX - effHeadLen * Math.cos(angle - Math.PI / 6),
+            endY - effHeadLen * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.lineTo(
+            endX - effHeadLen * Math.cos(angle + Math.PI / 6),
+            endY - effHeadLen * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.font = `600 ${fontSize}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const labelX = cx + axis.rotated.x * (len + labelPad);
+        const labelY = cy - axis.rotated.y * (len + labelPad);
+        ctx.fillText(axis.key.toUpperCase(), labelX, labelY);
+    }
+
+    ctx.globalAlpha = 1;
+}
+
 const Viewer = {
 
     _viewer: null,
@@ -16,6 +100,12 @@ const Viewer = {
     _onAtomClick: null,
     _renderTimer: null,
     _hasZoomed: false,
+
+    // Axes gizmo + element legend overlays, both default ON
+    _showAxes: true,
+    _showLegend: true,
+    _gizmoCanvas: null,
+    _gizmoCtx: null,
 
     // visibleAtoms array kept in sync — maps 3Dmol model index -> app atom
     _visibleAtoms: [],
@@ -42,7 +132,12 @@ const Viewer = {
             antialias: true,
         });
 
+        this._viewer.setViewChangeCallback(() => this._drawGizmo());
+
         this.applyThemeBackground();
+
+        // Reflect default-on state of the axes/legend toggles right away.
+        this.setShowAxes(this._showAxes);
     },
 
     // Called once per file load
@@ -90,6 +185,74 @@ const Viewer = {
         this._showBondLabels = !this._showBondLabels;
         this._scheduleFullRender();
         return this._showBondLabels;
+    },
+
+    setShowAxes(enabled) {
+        this._showAxes = enabled;
+
+        if (!this._gizmoCanvas) {
+            this._gizmoCanvas = document.getElementById('axes-gizmo');
+            this._gizmoCtx = this._gizmoCanvas ? this._gizmoCanvas.getContext('2d') : null;
+        }
+
+        if (this._gizmoCanvas) {
+            this._gizmoCanvas.classList.toggle('visible', enabled);
+        }
+
+        if (enabled) this._drawGizmo();
+    },
+
+    setShowLegend(enabled) {
+        this._showLegend = enabled;
+        this._renderLegend();
+    },
+
+    _drawGizmo() {
+        if (!this._showAxes || !this._gizmoCtx || !this._viewer) return;
+
+        const w = this._gizmoCanvas.width;
+        const h = this._gizmoCanvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const len = Math.min(w, h) * 0.27;
+
+        const view = this._viewer.getView();
+        // getView(): [posX, posY, posZ, dist, q.x, q.y, q.z, q.w, ...]
+        const q = { x: view[4], y: view[5], z: view[6], w: view[7] };
+
+        this._gizmoCtx.clearRect(0, 0, w, h);
+        drawAxesTriad(this._gizmoCtx, q, cx, cy, len, {
+            lineWidth: 2.5,
+            headLen: 7,
+            fontSize: 11,
+            labelPad: 13,
+        });
+    },
+
+    // Element color legend, built from whichever atoms are currently
+    // visible in the 3D viewer (respects element/exclude filters).
+    _renderLegend() {
+        const el = document.getElementById('viewer-legend');
+        if (!el) return;
+
+        if (!this._showLegend || !this._visibleAtoms || !this._visibleAtoms.length) {
+            el.innerHTML = '';
+            return;
+        }
+
+        const elements = [...new Set(this._visibleAtoms.map(a => a.element))];
+        const priority = { C: 0, H: 1 };
+
+        elements.sort((a, b) => {
+            const pa = priority[a] ?? 2;
+            const pb = priority[b] ?? 2;
+            if (pa !== pb) return pa - pb;
+            return a.localeCompare(b);
+        });
+
+        el.innerHTML = elements
+            .map(s => `<div class="viewer-legend-item"><span class="viewer-legend-swatch" style="background:${Parser.getColor(s)}"></span><span>${s}</span></div>`)
+            .join('');
     },
 
     resetView() {
@@ -348,6 +511,9 @@ const Viewer = {
         }
 
         viewer.render();
+
+        this._renderLegend();
+        this._drawGizmo();
     },
 
     _drawPlane({ planeResult, atoms }, color) {

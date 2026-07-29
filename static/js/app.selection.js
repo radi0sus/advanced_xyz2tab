@@ -54,6 +54,7 @@ Object.assign(App, {
             this.selection.splice(pos, 1);
         } else {
             this.selection.push(idx);
+            this._scrollToAtomIdx = idx;
         }
 
         this._syncSelectionHighlight();

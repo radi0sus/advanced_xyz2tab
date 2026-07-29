@@ -223,7 +223,8 @@ const Tables = {
         searchQuery = '',
         selectedAtoms = new Set(),
         excludedAtoms = new Set(),
-        activeElements = null
+        activeElements = null,
+        scrollToIdx = null
     ) {
         if (!container) return;
 
@@ -296,7 +297,7 @@ const Tables = {
                 <tr class="${selectedClass}${excludedClass}${inactiveClass}" data-idx="${atom.index}">
                     <td>${atom.labelIndex ?? atom.index}</td>
                     <td class="atom-label-cell">${atom.label}</td>
-                    <td class="atom-element-cell">${atom.element}</td>
+                    <td class="atom-element-cell"><span class="el-swatch" style="background:${Parser.getColor(atom.element)}"></span>${atom.element}</td>
                     <td>${atom.x.toFixed(4)}</td>
                     <td>${atom.y.toFixed(4)}</td>
                     <td>${atom.z.toFixed(4)}</td>
@@ -359,6 +360,39 @@ const Tables = {
                 }
             });
         });
+
+        // Soft-scroll the table to whichever atom was just (de)selected,
+        // e.g. by clicking it in the 3D viewer or in this table itself.
+        if (scrollToIdx != null) {
+            const target = container.querySelector(`tr[data-idx="${scrollToIdx}"]`);
+            if (target) this._scrollRowIntoView(target, container);
+        }
+    },
+
+    // Manual scroll instead of target.scrollIntoView(): the atom table has a
+    // sticky <thead>, and scrollIntoView's default block alignment can park
+    // the row right behind that sticky header (most visible for the first
+    // row, where the container can't scroll further up so the row just
+    // stays hidden under the header). Account for the header's height
+    // explicitly instead.
+    _scrollRowIntoView(row, wrap) {
+        if (!wrap) {
+            row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            return;
+        }
+
+        const thead = wrap.querySelector('thead');
+        const headerHeight = thead ? thead.getBoundingClientRect().height : 0;
+        const wrapRect = wrap.getBoundingClientRect();
+        const rowRect = row.getBoundingClientRect();
+        const hiddenAboveHeader = rowRect.top - wrapRect.top - headerHeight;
+        const hiddenBelowBottom = rowRect.bottom - wrapRect.bottom;
+
+        if (hiddenAboveHeader < 0) {
+            wrap.scrollBy({ top: hiddenAboveHeader, behavior: 'smooth' });
+        } else if (hiddenBelowBottom > 0) {
+            wrap.scrollBy({ top: hiddenBelowBottom, behavior: 'smooth' });
+        }
     },
 
     // --- Manual distances: saved measurements, NOT part of bond graph/statistics ---

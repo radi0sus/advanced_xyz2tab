@@ -37,11 +37,15 @@ Object.assign(App, {
         const viewerAtomResizer = document.getElementById('viewer-atom-resizer');
         const atomListPanel = document.getElementById('atom-list-panel');
 
+        const viewerControlsResizer = document.getElementById('viewer-controls-resizer');
+        const viewerControlsPanel = document.getElementById('viewer-controls-panel');
+
         if (!mainLayout || !viewerPanel || !tablePanel) return;
 
         // Restore saved sizes
         const savedViewerWidth = localStorage.getItem('xyz2tab.viewerPanelWidth');
         const savedAtomListHeight = localStorage.getItem('xyz2tab.atomListHeight');
+        const savedControlsHeight = localStorage.getItem('xyz2tab.viewerControlsHeight');
 
         if (savedViewerWidth) {
             root.style.setProperty('--viewer-panel-width', savedViewerWidth);
@@ -49,6 +53,10 @@ Object.assign(App, {
 
         if (savedAtomListHeight) {
             root.style.setProperty('--atom-list-height', savedAtomListHeight);
+        }
+
+        if (savedControlsHeight) {
+            root.style.setProperty('--viewer-controls-height', savedControlsHeight);
         }
 
         let resizeFrame = null;
@@ -140,6 +148,59 @@ Object.assign(App, {
                         .trim();
 
                     localStorage.setItem('xyz2tab.atomListHeight', value);
+
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+
+                    Viewer.resize();
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+        }
+
+        // Vertical resizing: 3D viewer / controls area (viewer-controls +
+        // selection toolbar). Delta-based, since — unlike the atom list,
+        // which is anchored to the panel's stable bottom edge — this
+        // panel's own bottom edge moves as its height changes.
+        if (viewerControlsResizer && viewerControlsPanel) {
+            viewerControlsResizer.addEventListener('mousedown', e => {
+                e.preventDefault();
+
+                viewerControlsResizer.classList.add('resizing');
+                document.body.classList.add('resizing', 'resizing-vertical');
+
+                const startY = e.clientY;
+                const startHeight = viewerControlsPanel.getBoundingClientRect().height;
+
+                const onMouseMove = ev => {
+                    const delta = ev.clientY - startY;
+                    // Dragging down should enlarge the 3D viewer above the
+                    // handle (and shrink this controls panel below it), so
+                    // the panel's height moves opposite to the cursor.
+                    let height = startHeight - delta;
+
+                    const minHeight = 90;
+                    const maxHeight = Math.max(160, viewerPanel.getBoundingClientRect().height * 0.75);
+
+                    height = Math.max(minHeight, Math.min(maxHeight, height));
+
+                    const value = Math.round(height) + 'px';
+
+                    root.style.setProperty('--viewer-controls-height', value);
+                    scheduleViewerResize();
+                };
+
+                const onMouseUp = () => {
+                    viewerControlsResizer.classList.remove('resizing');
+                    document.body.classList.remove('resizing', 'resizing-vertical');
+
+                    const value = getComputedStyle(root)
+                        .getPropertyValue('--viewer-controls-height')
+                        .trim();
+
+                    localStorage.setItem('xyz2tab.viewerControlsHeight', value);
 
                     document.removeEventListener('mousemove', onMouseMove);
                     document.removeEventListener('mouseup', onMouseUp);

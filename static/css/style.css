@@ -59,6 +59,7 @@
     --header-height: 44px;
     --viewer-panel-width: 45%;
     --atom-list-height: 190px;
+    --viewer-controls-height: auto;
 }
 
 /* Automatic dark mode from OS */
@@ -399,6 +400,18 @@ body.resizing-vertical {
     flex-shrink: 0;
 }
 
+/* Resizable wrapper around the controls row + selection/geometry toolbar,
+   so this area can be made taller or shorter independently of the 3D
+   viewer and the atom list, the same way those two are resizable. */
+#viewer-controls-panel {
+    height: var(--viewer-controls-height);
+    min-height: 0;
+    overflow-y: auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 #viewer-controls .btn-small {
     background: var(--viewer-button-bg);
     border-color: var(--viewer-button-border);
@@ -563,13 +576,13 @@ body.resizing-vertical {
     border: 1px solid var(--viewer-border);
     background: var(--surface);
     border-radius: var(--radius-md);
-    padding: 6px 8px;
+    padding: 5px 8px;
     font-size: 12.5px;
-    line-height: 1.35;
+    line-height: 1.3;
     color: var(--text);
-    height: 200px;
-    min-height: 200px;
-    max-height: 200px;
+    height: 185px;
+    min-height: 185px;
+    max-height: 185px;
     overflow: auto;
     flex-shrink: 0;
 }
@@ -1072,6 +1085,12 @@ th.sortable-th.sorted .sort-indicator {
     color: var(--text);
 }
 
+/* Action column */
+#manual-dihedrals-wrap .data-table th:last-child,
+#manual-dihedrals-wrap .data-table td:last-child {
+    text-align: right;
+}
+
 /* Summary and statistics values */
 #bonds-summary-wrap .data-table td,
 #bonds-stats-wrap .data-table td,
@@ -1145,6 +1164,42 @@ th.sortable-th.sorted .sort-indicator {
 #saved-planes-wrap .data-table .btn-small,
 #saved-plane-distances-wrap .data-table .btn-small,
 #saved-plane-angles-wrap .data-table .btn-small {
+    margin-left: 4px;
+}
+
+/* Ring management table (mirrors the Saved planes table styling above) */
+
+/* Saved rings: name and atom list */
+#saved-rings-wrap .data-table td:nth-child(2),
+#saved-rings-wrap .data-table td:nth-child(4) {
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* Saved rings: puckering amplitude, angles, conformation and status */
+#saved-rings-wrap .data-table td:nth-child(5),
+#saved-rings-wrap .data-table td:nth-child(6),
+#saved-rings-wrap .data-table td:nth-child(7),
+#saved-rings-wrap .data-table td:nth-child(8),
+#saved-rings-wrap .data-table td:nth-child(9) {
+    font-weight: 650;
+    color: var(--text);
+}
+
+/* Ring size column */
+#saved-rings-wrap .data-table th:nth-child(3),
+#saved-rings-wrap .data-table td:nth-child(3) {
+    text-align: center;
+}
+
+/* Action column */
+#saved-rings-wrap .data-table th:last-child,
+#saved-rings-wrap .data-table td:last-child {
+    text-align: right;
+}
+
+/* Ring table action buttons */
+#saved-rings-wrap .data-table .btn-small {
     margin-left: 4px;
 }
 

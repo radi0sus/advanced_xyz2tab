@@ -15,6 +15,15 @@ const GIZMO_COLORS = { x: '#e6483c', y: '#2fae4e', z: '#2f8fe6' };
 // Translucent halo color for selected atoms (matches xyzalign's styling).
 const SELECTION_COLOR = '#00d4ff';
 
+// Uniform atom sphere radius, except hydrogens are drawn a bit smaller —
+// matches the usual convention in molecular viewers.
+const DEFAULT_ATOM_RADIUS = 0.22;
+const HYDROGEN_ATOM_RADIUS = 0.16;
+
+function getAtomRadius(el) {
+    return el === 'H' ? HYDROGEN_ATOM_RADIUS : DEFAULT_ATOM_RADIUS;
+}
+
 function gizmoQuatRotate(q, v) {
     const tx = 2 * (q.y * v.z - q.z * v.y);
     const ty = 2 * (q.z * v.x - q.x * v.z);
@@ -104,6 +113,7 @@ const Viewer = {
     _onAtomClick: null,
     _renderTimer: null,
     _hasZoomed: false,
+    _needsInitialZoomFit: false,
 
     // Axes gizmo + element legend overlays, both default ON
     _showAxes: true,
@@ -155,6 +165,7 @@ const Viewer = {
         this._visibleAtoms = [];
         this._indexToModelIndex = {};
         this._hasZoomed = false;
+        this._needsInitialZoomFit = true;
 
         this._fullRender();
     },
@@ -259,9 +270,20 @@ const Viewer = {
             .join('');
     },
 
+    // 3Dmol's zoomTo() fits the model's bounding sphere with zero padding,
+    // so depending on the container's aspect ratio the molecule can end up
+    // touching (or slightly exceeding) the top/bottom or left/right edges.
+    // Zooming back out by a small factor afterwards adds a consistent
+    // margin on all sides.
+    _zoomToFit() {
+        if (!this._viewer) return;
+        this._viewer.zoomTo();
+        this._viewer.zoom(0.8);
+    },
+
     resetView() {
         if (this._viewer) {
-            this._viewer.zoomTo();
+            this._zoomToFit();
             this._viewer.render();
         }
     },
@@ -271,6 +293,18 @@ const Viewer = {
 
         if (typeof this._viewer.resize === 'function') {
             this._viewer.resize();
+        }
+
+        // The container can still have been hidden (display:none, zero
+        // size) at the moment _fullRender() first called zoomTo(), which
+        // leaves the camera fit to the wrong aspect ratio/size and can
+        // crop part of the molecule. Re-fit once here, after layout has
+        // settled to its real on-screen size, but only for the initial
+        // load — not on every later resize (e.g. panel dragging), so we
+        // don't clobber the user's own pan/zoom.
+        if (this._needsInitialZoomFit) {
+            this._needsInitialZoomFit = false;
+            this._zoomToFit();
         }
 
         this._viewer.render();
@@ -369,7 +403,7 @@ const Viewer = {
         for (const el of elements) {
             model.setStyle(
                 { elem: el },
-                { sphere: { radius: 0.22, color: Parser.getColor(el) } }
+                { sphere: { radius: getAtomRadius(el), color: Parser.getColor(el) } }
             );
         }
 
@@ -433,7 +467,7 @@ const Viewer = {
         for (const el of elements) {
             model.setStyle(
                 { elem: el },
-                { sphere: { radius: 0.22, color: Parser.getColor(el) } }
+                { sphere: { radius: getAtomRadius(el), color: Parser.getColor(el) } }
             );
         }
 
@@ -523,7 +557,7 @@ const Viewer = {
 
         // zoomTo only on first load, not on style updates
         if (!this._hasZoomed) {
-            viewer.zoomTo();
+            this._zoomToFit();
             this._hasZoomed = true;
         }
 

@@ -54,34 +54,41 @@
                 <canvas id="axes-gizmo" class="axes-gizmo" width="108" height="108"></canvas>
             </div>
 
-            <!-- Viewer controls -->
-            <div id="viewer-controls">
-                <button id="btn-reset-view" class="btn-small">Reset view</button>
-                <button id="btn-toggle-atom-labels" class="btn-small">Atom names</button>
-                <button id="btn-toggle-bond-labels" class="btn-small">Bond lengths</button>
-                <button id="btn-toggle-axes" class="btn-small active" title="Show a small rotating X/Y/Z axis indicator">Axes</button>
-                <button id="btn-toggle-legend" class="btn-small active" title="Show element color legend in the 3D viewer">Legend</button>
-            </div>
+            <!-- Resizer between 3D viewer and the controls area below it -->
+            <div id="viewer-controls-resizer" class="resizer resizer-horizontal" title="Resize controls area"></div>
 
-            <!-- Selection / Geometry toolbar -->
-            <div id="selection-toolbar">
-                <div id="selection-row">
-                    <span id="selection-label">Selection</span>
-                    <div id="selection-chips" class="selection-chips"></div>
-                    <button id="btn-selection-undo" class="btn-small">Undo</button>
-                    <button id="btn-selection-clear" class="btn-small btn-danger">Clear</button>
+            <div id="viewer-controls-panel">
+
+                <!-- Viewer controls -->
+                <div id="viewer-controls">
+                    <button id="btn-reset-view" class="btn-small">Reset view</button>
+                    <button id="btn-toggle-atom-labels" class="btn-small">Atom names</button>
+                    <button id="btn-toggle-bond-labels" class="btn-small">Bond lengths</button>
+                    <button id="btn-toggle-axes" class="btn-small active" title="Show a small rotating X/Y/Z axis indicator">Axes</button>
+                    <button id="btn-toggle-legend" class="btn-small active" title="Show element color legend in the 3D viewer">Legend</button>
                 </div>
 
-                <div id="selection-actions">
-                    <button id="btn-save-distance" class="btn-small" disabled>Save distance</button>
-                    <button id="btn-add-bond" class="btn-small" disabled>Add bond</button>
-                    <button id="btn-save-angle" class="btn-small" disabled>Save angle</button>
-                    <button id="btn-save-dihedral" class="btn-small" disabled>Save dihedral</button>
-                    <button id="btn-save-current-plane" class="btn-small" disabled>Save current plane</button>
-                    <button id="btn-save-plane-distance" class="btn-small" disabled>Save dist. to active plane</button>
+                <!-- Selection / Geometry toolbar -->
+                <div id="selection-toolbar">
+                    <div id="selection-row">
+                        <span id="selection-label">Selection</span>
+                        <div id="selection-chips" class="selection-chips"></div>
+                        <button id="btn-selection-undo" class="btn-small">Undo</button>
+                        <button id="btn-selection-clear" class="btn-small btn-danger">Clear</button>
+                    </div>
+
+                    <div id="selection-actions">
+                        <button id="btn-save-distance" class="btn-small" disabled>Save distance</button>
+                        <button id="btn-add-bond" class="btn-small" disabled>Add bond</button>
+                        <button id="btn-save-angle" class="btn-small" disabled>Save angle</button>
+                        <button id="btn-save-dihedral" class="btn-small" disabled>Save dihedral</button>
+                        <button id="btn-save-current-plane" class="btn-small" disabled>Save current plane</button>
+                        <button id="btn-save-plane-distance" class="btn-small" disabled>Save dist. to active plane</button>
+                    </div>
+
+                    <div id="selection-output" class="hidden"></div>
                 </div>
 
-                <div id="selection-output" class="hidden"></div>
             </div>
 
             <!-- Resizer between viewer and atom list -->

@@ -4,6 +4,7 @@ const Tables = {
 
     _onBondClick: null,
     _onAngleClick: null,
+    _onDihedralClick: null,
     _onAtomClick: null,
     _onAtomExcludeClick: null,
 
@@ -16,6 +17,7 @@ const Tables = {
     setAtomExcludeCallback(fn) { this._onAtomExcludeClick = fn; },
     setBondClickCallback(fn) { this._onBondClick = fn; },
     setAngleClickCallback(fn) { this._onAngleClick = fn; },
+    setDihedralClickCallback(fn) { this._onDihedralClick = fn; },
 
     setManualBondRemoveCallback(fn) { this._onManualBondRemove = fn; },
     setManualDistanceRemoveCallback(fn) { this._onManualDistanceRemove = fn; },
@@ -25,6 +27,7 @@ const Tables = {
     // Track currently selected row per table
     _selectedBondRow: null,
     _selectedAngleRow: null,
+    _selectedDihedralRow: null,
 
     // Sort state per rendered table.
     // Cycle per column: unsorted -> asc -> desc -> unsorted
@@ -233,12 +236,23 @@ const Tables = {
         let shownAtoms = atoms || [];
 
         if (q) {
+            // A bare integer (e.g. "15") means "find atom number 15", not a
+            // coordinate digit search — matching it as a substring against
+            // 6-decimal coordinates caused unrelated atoms to show up
+            // whenever their x/y/z happened to contain that digit sequence.
+            const isPureInteger = /^\d+$/.test(q);
+
             shownAtoms = shownAtoms.filter(atom => {
+                const num = atom.labelIndex ?? atom.index;
+
+                if (isPureInteger) {
+                    return String(num) === q;
+                }
+
                 const haystack = [
                     atom.label,
                     atom.element,
-                    atom.index,
-                    atom.labelIndex ?? atom.index,
+                    num,
                     atom.x.toFixed(6),
                     atom.y.toFixed(6),
                     atom.z.toFixed(6),
@@ -577,6 +591,8 @@ const Tables = {
     renderManualDihedrals(container, manualDihedrals, atoms) {
         if (!container) return;
 
+        this._selectedDihedralRow = null;
+
         if (!manualDihedrals || manualDihedrals.length === 0) {
             container.innerHTML = '';
             return;
@@ -622,7 +638,7 @@ const Tables = {
             const id = this._measurementId(m, manualDihedrals.indexOf(m));
 
             html += `
-                <tr>
+                <tr data-atoms="${selectedAtoms.map(a => a.index).join(',')}">
                     <td>${idx + 1}</td>
                     <td>${labels}</td>
                     <td>${angle.toFixed(3)}</td>
@@ -647,6 +663,23 @@ const Tables = {
 
         this._bindSortHeaders(container, 'manualDihedrals', () => {
             this.renderManualDihedrals(container, manualDihedrals, atoms);
+        });
+
+        container.querySelectorAll('tr[data-atoms]').forEach(row => {
+            row.addEventListener('click', () => {
+                const atomIndices = row.dataset.atoms.split(',').map(Number);
+
+                this._selectedDihedralRow = this._selectRow(
+                    row,
+                    this._selectedDihedralRow,
+                    sel => {
+                        if (this._onDihedralClick) {
+                            this._onDihedralClick(sel ? atomIndices : null);
+                        }
+                    },
+                    row
+                );
+            });
         });
 
         container.querySelectorAll('.manual-dihedral-remove').forEach(btn => {

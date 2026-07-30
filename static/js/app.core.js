@@ -39,6 +39,7 @@ const App = {
     savedRings: [],
     activeRingDetailsId: null,
     _nextRingId: 1,
+    _selectedRingRow: null,
 
     // Dihedral result state
     dihedralAtoms: [],
@@ -50,25 +51,50 @@ const App = {
             if (e.target.files[0]) this.loadFile(e.target.files[0]);
         });
 
-        // Drag & drop
+        // Drag & drop — works both on the initial empty-state dropzone and
+        // later, over the main layout, to open/replace the current file.
         const dropzone = document.getElementById('dropzone');
+        const dropOverlay = document.getElementById('drop-overlay');
+        let dragDepth = 0;
 
-        dropzone.addEventListener('dragover', e => {
+        const isFileDrag = e => !!(e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files'));
+
+        window.addEventListener('dragenter', e => {
+            if (!isFileDrag(e)) return;
             e.preventDefault();
-            dropzone.classList.add('drag-over');
-        });
+            dragDepth++;
 
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('drag-over');
-        });
-
-        dropzone.addEventListener('drop', e => {
-            e.preventDefault();
-            dropzone.classList.remove('drag-over');
-
-            if (e.dataTransfer.files[0]) {
-                this.loadFile(e.dataTransfer.files[0]);
+            if (dropzone.classList.contains('hidden')) {
+                dropOverlay.classList.add('active');
+            } else {
+                dropzone.classList.add('drag-over');
             }
+        });
+
+        window.addEventListener('dragover', e => {
+            if (!isFileDrag(e)) return;
+            e.preventDefault(); // required to allow dropping
+        });
+
+        window.addEventListener('dragleave', e => {
+            if (!isFileDrag(e)) return;
+            e.preventDefault();
+            dragDepth = Math.max(0, dragDepth - 1);
+
+            if (dragDepth === 0) {
+                dropOverlay.classList.remove('active');
+                dropzone.classList.remove('drag-over');
+            }
+        });
+
+        window.addEventListener('drop', e => {
+            if (!isFileDrag(e)) return;
+            e.preventDefault();
+            dragDepth = 0;
+            dropOverlay.classList.remove('active');
+            dropzone.classList.remove('drag-over');
+
+            if (e.dataTransfer.files[0]) this.loadFile(e.dataTransfer.files[0]);
         });
 
         // Tabs
@@ -172,6 +198,7 @@ const App = {
 
         Tables.setBondClickCallback((i, j) => this.onBondClick(i, j));
         Tables.setAngleClickCallback(atoms => this.onAngleClick(atoms));
+        Tables.setDihedralClickCallback(atoms => this.onDihedralClick(atoms));
 
         Tables.setManualBondRemoveCallback((i, j) => this.removeManualBond(i, j));
         Tables.setManualDistanceRemoveCallback(id => this.removeManualDistance(id));
@@ -551,6 +578,15 @@ const App = {
     },
 
     onAngleClick(atoms) {
+        // Table row selection highlights atoms, but does not alter central selection.
+        if (!atoms) {
+            this._setHighlightedAtoms(new Set());
+        } else {
+            this._setHighlightedAtoms(new Set(atoms.map(Number)));
+        }
+    },
+
+    onDihedralClick(atoms) {
         // Table row selection highlights atoms, but does not alter central selection.
         if (!atoms) {
             this._setHighlightedAtoms(new Set());

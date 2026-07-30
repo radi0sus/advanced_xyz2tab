@@ -40,8 +40,8 @@ Object.assign(App, {
         URL.revokeObjectURL(url);
     },
 
-    exportPng() {
-        const uri = Viewer.getPNG();
+    async exportPng() {
+        const uri = await Viewer.getPNG();
         if (!uri) return;
 
         const a = document.createElement('a');

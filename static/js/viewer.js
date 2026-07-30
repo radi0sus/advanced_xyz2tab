@@ -12,6 +12,9 @@ const GIZMO_HOME = {
 };
 const GIZMO_COLORS = { x: '#e6483c', y: '#2fae4e', z: '#2f8fe6' };
 
+// Translucent halo color for selected atoms (matches xyzalign's styling).
+const SELECTION_COLOR = '#00d4ff';
+
 function gizmoQuatRotate(q, v) {
     const tx = 2 * (q.y * v.z - q.z * v.y);
     const ty = 2 * (q.z * v.x - q.x * v.z);
@@ -93,6 +96,7 @@ const Viewer = {
     _showAtomLabels: false,
     _showBondLabels: false,
     _highlightedAtoms: new Set(),
+    _highlightShapes: [],
     _activeElements: null,
     _excludedAtoms: new Set(),
     _plane1Data: null,
@@ -313,6 +317,41 @@ const Viewer = {
         this._renderTimer = setTimeout(() => this._fullRender(), 150);
     },
 
+    // Removes any previously drawn selection halo shapes from the scene.
+    _clearHighlightShapes() {
+        if (!this._viewer) return;
+
+        for (const shape of this._highlightShapes) {
+            this._viewer.removeShape(shape);
+        }
+
+        this._highlightShapes = [];
+    },
+
+    // Draws a translucent solid sphere + wireframe outline around each
+    // selected atom, leaving the atom's own element color/size untouched
+    // (matches xyzalign's selection styling).
+    _drawSelectionHalos() {
+        if (!this._viewer || !this._atoms) return;
+
+        this._clearHighlightShapes();
+
+        for (const atomIndex of this._highlightedAtoms) {
+            const atom = this._atoms[atomIndex];
+            if (!atom) continue;
+
+            const center = { x: atom.x, y: atom.y, z: atom.z };
+
+            this._highlightShapes.push(this._viewer.addSphere({
+                center, radius: 0.34, color: SELECTION_COLOR, opacity: 0.45,
+            }));
+
+            this._highlightShapes.push(this._viewer.addSphere({
+                center, radius: 0.38, color: SELECTION_COLOR, wireframe: true, opacity: 0.9,
+            }));
+        }
+    },
+
     // Apply highlight only — fast, no model rebuild, no zoomTo
     _applyHighlight() {
         if (!this._model || !this._viewer) return;
@@ -323,7 +362,8 @@ const Viewer = {
             ? this._visibleAtoms
             : [];
 
-        // Reset all visible atoms to default element colors first
+        // Keep every atom at its plain element color/size — selection is
+        // shown via a halo sphere instead of recoloring the atom itself.
         const elements = [...new Set(visible.map(a => a.element))];
 
         for (const el of elements) {
@@ -333,20 +373,7 @@ const Viewer = {
             );
         }
 
-        // Apply highlight using 3Dmol's 0-based model index, not serial.
-        // This avoids wrong atom mapping such as Fe0 -> N0.
-        if (this._highlightedAtoms.size > 0) {
-            for (const atomIndex of this._highlightedAtoms) {
-                const modelIndex = this._indexToModelIndex[atomIndex];
-
-                if (modelIndex !== undefined) {
-                    model.setStyle(
-                        { index: modelIndex },
-                        { sphere: { radius: 0.32, color: '#ffdd44' } }
-                    );
-                }
-            }
-        }
+        this._drawSelectionHalos();
 
         this._viewer.render();
     },
@@ -410,19 +437,9 @@ const Viewer = {
             );
         }
 
-        // Highlighted atoms using 3Dmol's 0-based model index, not serial
-        if (this._highlightedAtoms.size > 0) {
-            for (const atomIndex of this._highlightedAtoms) {
-                const modelIndex = this._indexToModelIndex[atomIndex];
-
-                if (modelIndex !== undefined) {
-                    model.setStyle(
-                        { index: modelIndex },
-                        { sphere: { radius: 0.32, color: '#ffdd44' } }
-                    );
-                }
-            }
-        }
+        // Selection is drawn as a halo sphere, not by recoloring the atom.
+        this._highlightShapes = [];
+        this._drawSelectionHalos();
 
         // Bonds as cylinders
         for (const bond of visibleBonds) {
@@ -620,7 +637,143 @@ const Viewer = {
         }
     },
 
-    getPNG() {
-        return this._viewer ? this._viewer.pngURI() : null;
+    async getPNG() {
+        if (!this._viewer) return null;
+
+        const baseUri = this._viewer.pngURI();
+
+        // Nothing to composite — return the plain render as-is.
+        if (!this._showAxes && !(this._showLegend && this._visibleAtoms && this._visibleAtoms.length)) {
+            return baseUri;
+        }
+
+        try {
+            return await this._composeExportImage(baseUri);
+        } catch (err) {
+            console.error('PNG export: overlay compositing failed, using plain render', err);
+            return baseUri;
+        }
+    },
+
+    // Bakes the axes gizmo and/or element legend into a copy of the
+    // rendered PNG, so the exported image matches what's shown on screen.
+    async _composeExportImage(baseUri) {
+        const img = await new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = reject;
+            image.src = baseUri;
+        });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        // Scale overlay sizes/positions from on-screen CSS pixels to the
+        // exported image's (often higher-DPI) pixel size.
+        const outer = document.getElementById('viewer-outer');
+        const cssRect = outer ? outer.getBoundingClientRect() : null;
+        const scale = cssRect && cssRect.width > 0
+            ? img.width / cssRect.width
+            : (window.devicePixelRatio || 1);
+
+        if (this._showAxes) {
+            this._drawGizmoOnExport(ctx, scale);
+        }
+
+        if (this._showLegend && this._visibleAtoms && this._visibleAtoms.length) {
+            this._drawLegendOnExport(ctx, scale);
+        }
+
+        return canvas.toDataURL('image/png');
+    },
+
+    _drawGizmoOnExport(ctx, scale) {
+        if (!this._viewer) return;
+
+        const pad = 8 * scale;
+        const size = 108 * scale;
+        const cx = ctx.canvas.width - pad - size / 2;
+        const cy = pad + size / 2;
+        const len = size * 0.27;
+
+        const view = this._viewer.getView();
+        const q = { x: view[4], y: view[5], z: view[6], w: view[7] };
+
+        drawAxesTriad(ctx, q, cx, cy, len, {
+            lineWidth: 2.5 * scale,
+            headLen: 7 * scale,
+            fontSize: 11 * scale,
+            labelPad: 13 * scale,
+        });
+    },
+
+    _drawLegendOnExport(ctx, scale) {
+        const elements = [...new Set(this._visibleAtoms.map(a => a.element))];
+        const priority = { C: 0, H: 1 };
+
+        elements.sort((a, b) => {
+            const pa = priority[a] ?? 2;
+            const pb = priority[b] ?? 2;
+            if (pa !== pb) return pa - pb;
+            return a.localeCompare(b);
+        });
+
+        const pad = 8 * scale;
+        const boxPadX = 10 * scale;
+        const boxPadY = 6 * scale;
+        const rowH = 15 * scale;
+        const swatchR = 5 * scale;
+        const fontSize = 11.5 * scale;
+        const gap = 6 * scale;
+
+        ctx.font = `${fontSize}px sans-serif`;
+
+        let maxTextW = 0;
+        for (const el of elements) {
+            maxTextW = Math.max(maxTextW, ctx.measureText(el).width);
+        }
+
+        const boxW = boxPadX * 2 + swatchR * 2 + gap + maxTextW;
+        const boxH = boxPadY * 2 + rowH * elements.length;
+        const boxX = pad;
+        const boxY = ctx.canvas.height - pad - boxH;
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(30,30,26,0.85)';
+        this._roundRectPath(ctx, boxX, boxY, boxW, boxH, 6 * scale);
+        ctx.fill();
+
+        elements.forEach((el, i) => {
+            const rowY = boxY + boxPadY + rowH * i + rowH / 2;
+            const swatchCx = boxX + boxPadX + swatchR;
+
+            ctx.beginPath();
+            ctx.fillStyle = Parser.getColor(el);
+            ctx.arc(swatchCx, rowY, swatchR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = Math.max(1, scale);
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.stroke();
+
+            ctx.fillStyle = '#f0f0ec';
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'left';
+            ctx.fillText(el, swatchCx + swatchR + gap, rowY);
+        });
+
+        ctx.restore();
+    },
+
+    _roundRectPath(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
     },
 };

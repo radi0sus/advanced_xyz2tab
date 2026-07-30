@@ -8,6 +8,10 @@
 </head>
 <body>
 
+<div id="drop-overlay">
+    <div id="drop-overlay-inner">Drop .xyz file to open</div>
+</div>
+
 <div id="app">
 
     <!-- Header -->
@@ -129,7 +133,7 @@
                 <button class="tab active" data-tab="bonds">Bonds</button>
                 <button class="tab" data-tab="angles">Angles</button>
                 <button class="tab" data-tab="plane">Planes</button>
-                <button class="tab" data-tab="ring">Ring analysis</button>
+                <button class="tab" data-tab="ring">Rings</button>
                 <button class="tab" data-tab="dihedral">Dihedral</button>
                 <button class="tab" data-tab="info">Info</button>
             </div>
@@ -160,7 +164,7 @@
                     Select one or more atoms to save distances to the active plane.
                     Selecting exactly 5 or 6 atoms (in ring order) additionally
                     enables ring puckering analysis — see the
-                    <b>Ring analysis</b> tab.
+                    <b>Rings</b> tab.
                 </div>
             
                 <div id="current-plane-preview"></div>
@@ -175,7 +179,7 @@
             
             </div>
 
-            <!-- Tab: Ring analysis -->
+            <!-- Tab: Rings -->
             <div id="tab-ring" class="tab-content">
 
                 <div class="result-box" style="margin-bottom:10px">

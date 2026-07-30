@@ -289,6 +289,36 @@ body {
     background: var(--accent-light);
 }
 
+/* Full-page overlay shown while dragging a file over the app once a
+   molecule is already loaded (main-layout has no dropzone surface). */
+#drop-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 20, 16, 0.55);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.12s;
+}
+
+#drop-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+#drop-overlay-inner {
+    padding: 2rem 3rem;
+    border: 2px dashed rgba(255, 255, 255, 0.85);
+    border-radius: var(--radius-lg);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 600;
+}
+
 /* Main layout */
 #main-layout {
     flex: 1;
@@ -537,9 +567,9 @@ body.resizing-vertical {
     font-size: 12.5px;
     line-height: 1.35;
     color: var(--text);
-    height: 120px;
-    min-height: 120px;
-    max-height: 120px;
+    height: 200px;
+    min-height: 200px;
+    max-height: 200px;
     overflow: auto;
     flex-shrink: 0;
 }

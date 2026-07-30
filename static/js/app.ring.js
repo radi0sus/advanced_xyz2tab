@@ -125,6 +125,8 @@ Object.assign(App, {
         const container = document.getElementById('saved-rings-wrap');
         if (!container) return;
 
+        this._selectedRingRow = null;
+
         if (!this.savedRings.length) {
             container.innerHTML = `
                 <div class="result-box">
@@ -173,7 +175,7 @@ Object.assign(App, {
             }
 
             html += `
-                <tr class="${invalid ? 'inactive' : ''}">
+                <tr class="${invalid ? 'inactive' : ''}" data-id="${ring.id}" data-atoms="${atoms.map(a => a.index).join(',')}">
                     <td>${idx + 1}</td>
                     <td>${ring.name}</td>
                     <td>${result.N}</td>
@@ -207,6 +209,24 @@ Object.assign(App, {
         `;
 
         container.innerHTML = html;
+
+        container.querySelectorAll('tr[data-atoms]').forEach(row => {
+            row.addEventListener('click', () => {
+                const atomIndices = row.dataset.atoms
+                    .split(',')
+                    .filter(Boolean)
+                    .map(Number);
+
+                this._selectedRingRow = Tables._selectRow(
+                    row,
+                    this._selectedRingRow,
+                    sel => {
+                        this._setHighlightedAtoms(sel ? new Set(atomIndices) : new Set());
+                    },
+                    row
+                );
+            });
+        });
 
         container.querySelectorAll('.ring-details').forEach(btn => {
             btn.addEventListener('click', e => {

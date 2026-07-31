@@ -123,6 +123,14 @@ const App = {
             e.target.classList.toggle('active', on);
         });
 
+        // Planes overlay — default on, only controls visibility (data itself
+        // is unaffected), styled like the other viewer-controls toggle buttons.
+        document.getElementById('btn-toggle-planes').addEventListener('click', e => {
+            const on = !e.target.classList.contains('active');
+            e.target.classList.toggle('active', on);
+            Viewer.setShowPlanes(on);
+        });
+
         // Axes gizmo / element legend overlays — both default on, styled
         // and behaving like the other viewer-controls toggle buttons.
         document.getElementById('btn-toggle-axes').addEventListener('click', e => {

@@ -110,6 +110,7 @@ const Viewer = {
     _excludedAtoms: new Set(),
     _plane1Data: null,
     _plane2Data: null,
+    _showPlanes: true,
     _onAtomClick: null,
     _renderTimer: null,
     _hasZoomed: false,
@@ -220,6 +221,11 @@ const Viewer = {
     setShowLegend(enabled) {
         this._showLegend = enabled;
         this._renderLegend();
+    },
+
+    setShowPlanes(enabled) {
+        this._showPlanes = enabled;
+        this._scheduleFullRender();
     },
 
     _drawGizmo() {
@@ -547,12 +553,14 @@ const Viewer = {
         });
 
         // Planes
-        if (this._plane1Data) {
-            this._drawPlane(this._plane1Data, '#4a90d9');
-        }
+        if (this._showPlanes) {
+            if (this._plane1Data) {
+                this._drawPlane(this._plane1Data, '#4a90d9');
+            }
 
-        if (this._plane2Data) {
-            this._drawPlane(this._plane2Data, '#d94a4a');
+            if (this._plane2Data) {
+                this._drawPlane(this._plane2Data, '#d94a4a');
+            }
         }
 
         // zoomTo only on first load, not on style updates

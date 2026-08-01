@@ -615,7 +615,24 @@ const Symmetry = {
         // nothing else reached that order.
         const SANE_CUTOFF = 0.5;
         const goodAxes = axes.filter(a => a.error <= SANE_CUTOFF);
-        const axisPool = goodAxes.length ? goodAxes : axes;
+
+        if (!goodAxes.length) {
+            // Not one candidate axis is even remotely plausible at any
+            // usable tolerance. Falling back to the full, unfiltered axis
+            // pool here would just resurface whichever order happened to
+            // test lowest (typically the highest tested order, MAX_N,
+            // since a smaller rotation angle trivially produces a smaller
+            // mismatch even with zero real symmetry) — e.g. reporting a
+            // "C8" candidate at ~0.8 Å error for a molecule with no
+            // rotational symmetry at all. Treat this the same as having no
+            // candidate axes to begin with.
+            add('C1', 0);
+            if (planes.length) add('Cs', planes[0].error);
+            add('Ci', inversionError);
+            return results.sort((a, b) => a.error - b.error);
+        }
+
+        const axisPool = goodAxes;
         const mainAxis = axisPool.slice().sort((a, b) => (b.order - a.order) || (a.error - b.error))[0];
         const n = mainAxis.order;
 

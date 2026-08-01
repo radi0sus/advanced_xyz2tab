@@ -8,6 +8,7 @@ Object.assign(App, {
 
             bonds: this.filteredBonds,
             angles: this.filteredAngles,
+            allBonds: this.allBonds,
 
             manualDistances: this.manualDistances,
             manualAngles: this.manualAngles,
@@ -19,6 +20,11 @@ Object.assign(App, {
             savedPlaneAngles: this.savedPlaneAngles,
 
             savedRings: this.savedRings,
+
+            symmetryResult: this.symmetryRaw ? Symmetry.classify(this.symmetryRaw, this.symmetryTolerance) : null,
+            symmetryRaw: this.symmetryRaw,
+            symmetryTolerance: this.symmetryTolerance,
+            symmetrySkippedAuto: this.symmetrySkippedAuto,
 
             dihedralAtoms: this.dihedralAtoms,
             dihedralAngle: this.dihedralAngle,

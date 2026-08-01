@@ -7,6 +7,7 @@ const Markdown = {
             parsed,
             bonds = [],
             angles = [],
+            allBonds = bonds,
 
             manualDistances = [],
             manualAngles = [],
@@ -18,6 +19,11 @@ const Markdown = {
             savedPlaneAngles = [],
 
             savedRings = [],
+
+            symmetryResult = null,
+            symmetryRaw = null,
+            symmetryTolerance = null,
+            symmetrySkippedAuto = false,
 
             dihedralAtoms = [],
             dihedralAngle = null,
@@ -88,10 +94,41 @@ const Markdown = {
                 .filter(Boolean);
         };
 
+        const bondKey = (i, j) => {
+            i = Number(i);
+            j = Number(j);
+            return i < j ? `${i}-${j}` : `${j}-${i}`;
+        };
+
+        const ringBondSet = new Set(allBonds.map(b => bondKey(b.i, b.j)));
+
+        // Checks whether the ring atoms (in saved connectivity order) still
+        // form a closed ring of bonds: atom[0]-atom[1], ..., atom[N-1]-atom[0].
+        const checkRingConnectivity = atomsForRing => {
+            if (!atomsForRing || atomsForRing.length < 3) return { ok: false, missing: [] };
+
+            const missing = [];
+
+            for (let k = 0; k < atomsForRing.length; k++) {
+                const a = atomsForRing[k];
+                const b = atomsForRing[(k + 1) % atomsForRing.length];
+
+                if (!ringBondSet.has(bondKey(a.index, b.index))) {
+                    missing.push([a.label, b.label]);
+                }
+            }
+
+            return { ok: missing.length === 0, missing };
+        };
+
         const isRingInvalid = ring => {
             if (!ring || !ring.atomIndices) return true;
 
-            return ring.atomIndices.some(idx => excludedAtoms.has(Number(idx)));
+            if (ring.atomIndices.some(idx => excludedAtoms.has(Number(idx)))) {
+                return true;
+            }
+
+            return !checkRingConnectivity(ringAtoms(ring)).ok;
         };
 
         const ringConformationLabel = result => {
@@ -547,13 +584,28 @@ const Markdown = {
                 const result = ring.result;
                 const invalid = isRingInvalid(ring);
 
-                const excludedLabels = atomsForRing
-                    .filter(atom => excludedAtoms.has(atom.index))
-                    .map(atom => atom.label);
+                let status = 'valid';
 
-                const status = invalid
-                    ? (excludedLabels.length ? `invalid: excluded ${excludedLabels.join(', ')}` : 'invalid')
-                    : 'valid';
+                if (invalid) {
+                    const excludedLabels = atomsForRing
+                        .filter(atom => excludedAtoms.has(atom.index))
+                        .map(atom => atom.label);
+
+                    const missingBonds = checkRingConnectivity(atomsForRing).missing
+                        .map(([a, b]) => `${a}–${b}`);
+
+                    const reasons = [];
+
+                    if (excludedLabels.length) {
+                        reasons.push(`excluded ${excludedLabels.join(', ')}`);
+                    }
+
+                    if (missingBonds.length) {
+                        reasons.push(`missing bond ${missingBonds.join(', ')}`);
+                    }
+
+                    status = reasons.length ? `invalid: ${reasons.join('; ')}` : 'invalid';
+                }
 
                 lines.push(
                     `| ${i + 1} | ${mdCell(ring.name)} | ${result.N} | ${mdCell(atomsForRing.map(a => a.label).join(', '))} | ${result.Q.toFixed(4)} | ${result.N === 6 ? result.theta.toFixed(2) : '—'} | ${result.phi2.toFixed(2)} | ${mdCell(ringConformationLabel(result))} | ${mdCell(status)} |`
@@ -589,6 +641,55 @@ const Markdown = {
 
                 lines.push('');
             }
+        }
+
+        // --- Point group symmetry (last section, not prominent) ---
+        if (symmetryResult) {
+            lines.push('## Point Group Symmetry');
+            lines.push('');
+            lines.push(`**Point group:** ${Format.pointGroupHtml(symmetryResult.pointGroup)}  `);
+            lines.push(`**Tolerance:** ${symmetryTolerance.toFixed(3)} Å`);
+            lines.push('');
+
+            if (symmetryResult.elements && symmetryResult.elements.length) {
+                lines.push('| Element | Error (Å) |');
+                lines.push('|---------|-----------|');
+
+                for (const el of symmetryResult.elements) {
+                    lines.push(`| ${Format.symmetryElementLabel(el)} | ${el.error.toFixed(4)} |`);
+                }
+
+                lines.push('');
+            }
+
+            if (symmetryRaw) {
+                const candidates = Symmetry.rankCandidates(symmetryRaw);
+                const seen = new Set();
+                lines.push('**Scoring — candidate groups** (fixed ranking, independent of tolerance; the assigned group is marked):');
+                lines.push('');
+                lines.push('| Group | Error (Å) |');
+                lines.push('|-------|-----------|');
+                for (const c of candidates) {
+                    if (seen.has(c.name)) continue;
+                    seen.add(c.name);
+                    const mark = c.name === symmetryResult.pointGroup ? ' ←' : '';
+                    lines.push(`| ${Format.pointGroupHtml(c.name)}${mark} | ${c.error.toFixed(4)} |`);
+                }
+                lines.push('');
+            }
+
+            const cubicNames = ['T', 'Th', 'O', 'Td', 'Oh'].map(g => Format.pointGroupHtml(g)).join('/');
+            lines.push(
+                `_Approximate, geometry-only detection; best-effort for cubic ` +
+                `groups (${cubicNames}), icosahedral (${Format.pointGroupHtml('Ih')}) not covered._`
+            );
+            lines.push('');
+        } else if (symmetrySkippedAuto) {
+            lines.push('## Point Group Symmetry');
+            lines.push('');
+            lines.push('_Not computed automatically (atom count above threshold) — ' +
+                'run the analysis manually in the Symmetry tab before exporting to include it here._');
+            lines.push('');
         }
 
         return lines.join('\n');

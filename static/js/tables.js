@@ -219,6 +219,82 @@ const Tables = {
         container.innerHTML = html;
     },
 
+    // --- Point group symmetry (Info tab) ---
+    // Split in two so the tolerance slider never gets destroyed mid-drag:
+    // renderSymmetryShell() is written once, renderSymmetryBody() is
+    // refreshed on every 'input' event.
+    renderSymmetryShell(tolerance, initialBodyHtml = '') {
+        return `
+            <div class="table-label">Point group symmetry</div>
+            <div class="result-box" style="margin-bottom:8px">
+                <label for="symmetry-tolerance-slider">Tolerance</label>
+                <input type="range" id="symmetry-tolerance-slider"
+                       min="0.01" max="0.5" step="0.005" value="${tolerance}"
+                       style="width:160px;vertical-align:middle;margin:0 8px">
+                <span id="symmetry-tolerance-value">${tolerance.toFixed(3)} Å</span>
+                <div style="margin-top:4px;color:var(--text-muted);font-size:12.5px">
+                    Approximate, geometry-only detection (no external library).
+                    Best-effort for cubic groups (${['Td', 'Oh', 'T', 'Th', 'O'].map(g => Format.pointGroupHtml(g)).join('/')});
+                    icosahedral (${Format.pointGroupHtml('Ih')}) is not covered.
+                </div>
+            </div>
+            <div id="symmetry-results-body">${initialBodyHtml}</div>
+        `;
+    },
+
+    _symmetryErrorBadge(error, tolerance) {
+        if (error === undefined || error === null) return '<span style="color:var(--text-muted)">–</span>';
+        const ok = error <= tolerance;
+        const color = ok ? '#3fa34d' : (error <= tolerance * 2 ? '#d9a03f' : '#d94a4a');
+        return `<span style="color:${color};font-weight:600">${error.toFixed(4)} Å</span>`;
+    },
+
+    renderSymmetryBody(classified, raw) {
+        // Tolerance was already used to compute `classified`; read it back
+        // off the slider here only for error-value color coding.
+        const sliderEl = document.getElementById('symmetry-tolerance-slider');
+        const tolerance = sliderEl ? parseFloat(sliderEl.value) : 0.10;
+
+        let html = `<div class="result-box" style="margin-bottom:8px">
+            <div><b>Point group:</b> <span class="result-value">${Format.pointGroupHtml(classified.pointGroup)}</span></div>
+            ${raw && raw.isLinear ? '<div style="color:var(--text-muted);font-size:12.5px;margin-top:2px">Linear molecule</div>' : ''}
+        </div>`;
+
+        if (classified.elements && classified.elements.length) {
+            html += '<div class="table-label">Defining elements</div>';
+            html += '<table class="data-table"><thead><tr><th>Element</th><th>Error</th></tr></thead><tbody>';
+            for (const el of classified.elements) {
+                html += `<tr>
+                    <td>${Format.symmetryElementLabel(el)}</td>
+                    <td>${this._symmetryErrorBadge(el.error, tolerance)}</td>
+                </tr>`;
+            }
+            html += '</tbody></table>';
+        }
+
+        if (raw) {
+            const candidates = Symmetry.rankCandidates(raw);
+            const seen = new Set();
+            html += '<div class="table-label" style="margin-top:8px">Scoring — candidate groups</div>';
+            html += '<div style="color:var(--text-muted);font-size:12.5px;margin-bottom:4px">' +
+                'Fixed ranking from the raw geometry — does not change with the ' +
+                'tolerance slider; only the highlighted (assigned) row does.</div>';
+            html += '<table class="data-table"><thead><tr><th>Group</th><th>Error</th></tr></thead><tbody>';
+            for (const c of candidates) {
+                if (seen.has(c.name)) continue;
+                seen.add(c.name);
+                const isAssigned = c.name === classified.pointGroup;
+                html += `<tr${isAssigned ? ' style="font-weight:600"' : ''}>
+                    <td>${Format.pointGroupHtml(c.name)}${isAssigned ? ' ←' : ''}</td>
+                    <td>${this._symmetryErrorBadge(c.error, tolerance)}</td>
+                </tr>`;
+            }
+            html += '</tbody></table>';
+        }
+
+        return html;
+    },
+
     // --- Atom list under viewer ---
     renderAtomList(
         container,

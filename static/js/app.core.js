@@ -330,6 +330,10 @@ const App = {
         // Info table
         Tables.renderInfo(document.getElementById('info-table-wrap'), this.parsed);
 
+        // Point group symmetry (Info tab) — cheap enough to run
+        // automatically below Symmetry.MAX_ATOMS_AUTO atoms.
+        this._runSymmetryAnalysis();
+
         // Viewer
         Viewer.load(atoms, this.allBonds, this.activeElements, this.excludedAtoms);
 

@@ -28,6 +28,21 @@ Object.assign(App, {
 
                 if (ring && typeof this._renderRingSummaryHtml === 'function') {
                     ringHtml = this._renderRingSummaryHtml(ring.result);
+                } else if (this.lastRingRejection && !this.lastRingRejection.ok) {
+                    const missingLabel = this.lastRingRejection.missing
+                        .map(([a, b]) => `${a}–${b}`)
+                        .join(', ');
+
+                    ringHtml = `
+                        <div style="margin-top:6px">
+                            <div style="color:var(--text-muted)">Ring puckering (Cremer-Pople)</div>
+                            <div style="color:var(--text-soft);font-size:12px">
+                                Not a bonded ring — missing bond(s): ${missingLabel}.
+                                Select atoms in ring (bond) order, or add the
+                                missing bond(s) with "add bond" first.
+                            </div>
+                        </div>
+                    `;
                 }
             }
 
@@ -329,18 +344,38 @@ Object.assign(App, {
 
         if (atoms.length >= 5) {
             const plane = Chem.calcPlane(atoms);
-            const ringEligible = atoms.length === 5 || atoms.length === 6;
+            const sizeEligible = atoms.length === 5 || atoms.length === 6;
+
+            const connectivity = sizeEligible && typeof this._checkRingConnectivity === 'function'
+                ? this._checkRingConnectivity(atoms)
+                : null;
+
+            const ringEligible = sizeEligible && (!connectivity || connectivity.ok);
             const ringResult = ringEligible ? Chem.calcRingPucker(atoms) : null;
 
             let html = `
                 <div class="selection-output-title">
-                    ${ringEligible ? 'Plane / ring preview' : 'Plane preview'}
+                    ${sizeEligible ? 'Plane / ring preview' : 'Plane preview'}
                 </div>
                 <div style="margin-bottom:3px;color:var(--text-muted)">
                     ${atoms.length} selected atoms
                 </div>
                 ${plane ? `<div>Plane RMSD: <span class="result-value">${plane.rmsd.toFixed(4)} Å</span></div>` : ''}
             `;
+
+            if (connectivity && !connectivity.ok) {
+                const missingLabel = connectivity.missing
+                    .map(([a, b]) => `${a}–${b}`)
+                    .join(', ');
+
+                html += `
+                    <div style="margin-top:4px;color:var(--text-soft);font-size:12px">
+                        Not a bonded ring — missing bond(s): ${missingLabel}.
+                        Select atoms in ring (bond) order, or add the
+                        missing bond(s) with "add bond" first.
+                    </div>
+                `;
+            }
 
             if (plane && activePlane) {
                 const planeAngle = Chem.angleBetweenPlanes(activePlane.result, plane);

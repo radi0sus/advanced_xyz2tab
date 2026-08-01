@@ -62,6 +62,10 @@ Object.assign(App, {
 
         this.recalcBonds();
 
+        if (typeof this._renderRingAnalysis === 'function') {
+            this._renderRingAnalysis();
+        }
+
         this._showSelectionOutput(`
             <div class="selection-output-title">Manual bond</div>
             <div>
@@ -151,6 +155,10 @@ Object.assign(App, {
         if (this.manualContacts.length === before) return;
 
         this.recalcBonds();
+
+        if (typeof this._renderRingAnalysis === 'function') {
+            this._renderRingAnalysis();
+        }
 
         const a = this.parsed.atoms[i];
         const b = this.parsed.atoms[j];

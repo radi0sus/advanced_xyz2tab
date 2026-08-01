@@ -21,7 +21,58 @@ Object.assign(App, {
     _isRingInvalid(ring) {
         if (!ring || !ring.atomIndices) return true;
 
-        return ring.atomIndices.some(idx => this.excludedAtoms.has(Number(idx)));
+        if (ring.atomIndices.some(idx => this.excludedAtoms.has(Number(idx)))) {
+            return true;
+        }
+
+        const atoms = this._getRingAtoms(ring);
+        const connectivity = this._checkRingConnectivity(atoms);
+
+        return !connectivity.ok;
+    },
+
+    // Full breakdown of why a saved ring is invalid, if it is: which atoms
+    // are excluded, and/or which bonds of the ring are currently missing
+    // (e.g. because a manual bond was removed again).
+    _ringInvalidDetails(ring) {
+        const atoms = this._getRingAtoms(ring);
+
+        const excludedAtomLabels = atoms
+            .filter(atom => this.excludedAtoms.has(atom.index))
+            .map(atom => atom.label);
+
+        const connectivity = this._checkRingConnectivity(atoms);
+        const missingBondLabels = connectivity.ok
+            ? []
+            : connectivity.missing.map(([a, b]) => `${a}–${b}`);
+
+        return { excludedAtomLabels, missingBondLabels };
+    },
+
+    // Checks whether `atoms` (in the given selection order) form a closed
+    // ring of bonds: atom[0]-atom[1], atom[1]-atom[2], ..., atom[N-1]-atom[0].
+    // Uses this.allBonds, which already includes auto-detected bonds AND
+    // manual bonds added via "add bond" (see _mergeManualContacts).
+    // Returns { ok: true } or { ok: false, missing: [[labelA, labelB], ...] }.
+    _checkRingConnectivity(atoms) {
+        if (!atoms || atoms.length < 3) return { ok: false, missing: [] };
+
+        const bondSet = new Set(
+            (this.allBonds || []).map(b => this._bondKey(b.i, b.j))
+        );
+
+        const missing = [];
+
+        for (let k = 0; k < atoms.length; k++) {
+            const a = atoms[k];
+            const b = atoms[(k + 1) % atoms.length];
+
+            if (!bondSet.has(this._bondKey(a.index, b.index))) {
+                missing.push([a.label, b.label]);
+            }
+        }
+
+        return { ok: missing.length === 0, missing };
     },
 
     _ringConformationLabel(result) {
@@ -40,7 +91,16 @@ Object.assign(App, {
     saveCurrentRing(atoms) {
         atoms = atoms || this._getSelectedAtoms();
 
+        this.lastRingRejection = null;
+
         if (atoms.length !== 5 && atoms.length !== 6) return null;
+
+        const connectivity = this._checkRingConnectivity(atoms);
+
+        if (!connectivity.ok) {
+            this.lastRingRejection = connectivity;
+            return null;
+        }
 
         const result = Chem.calcRingPucker(atoms);
         if (!result) return null;
@@ -162,16 +222,21 @@ Object.assign(App, {
             const invalid = this._isRingInvalid(ring);
             const result = ring.result;
 
-            const excludedAtomLabels = atoms
-                .filter(atom => this.excludedAtoms.has(atom.index))
-                .map(atom => atom.label);
-
             let status = 'valid';
 
             if (invalid) {
-                status = excludedAtomLabels.length
-                    ? `invalid: excluded ${excludedAtomLabels.join(', ')}`
-                    : 'invalid';
+                const { excludedAtomLabels, missingBondLabels } = this._ringInvalidDetails(ring);
+                const reasons = [];
+
+                if (excludedAtomLabels.length) {
+                    reasons.push(`excluded ${excludedAtomLabels.join(', ')}`);
+                }
+
+                if (missingBondLabels.length) {
+                    reasons.push(`missing bond ${missingBondLabels.join(', ')}`);
+                }
+
+                status = reasons.length ? `invalid: ${reasons.join('; ')}` : 'invalid';
             }
 
             html += `
@@ -263,6 +328,7 @@ Object.assign(App, {
         const atoms = this._getRingAtoms(ring);
         const result = ring.result;
         const invalid = this._isRingInvalid(ring);
+        const invalidDetails = invalid ? this._ringInvalidDetails(ring) : null;
         const centroid = result.centroid;
         const normal = result.normal;
 
@@ -272,6 +338,17 @@ Object.assign(App, {
                 <div>
                     <b>Status:</b> ${invalid ? 'invalid' : 'valid'}
                 </div>
+                ${invalidDetails && invalidDetails.excludedAtomLabels.length ? `
+                    <div style="margin-top:4px;color:var(--text-soft);font-size:12px">
+                        Excluded atom(s): ${invalidDetails.excludedAtomLabels.join(', ')}
+                    </div>
+                ` : ''}
+                ${invalidDetails && invalidDetails.missingBondLabels.length ? `
+                    <div style="margin-top:4px;color:var(--text-soft);font-size:12px">
+                        Missing bond(s): ${invalidDetails.missingBondLabels.join(', ')}
+                        (a manual bond may have been removed)
+                    </div>
+                ` : ''}
                 <div style="margin-top:4px;color:var(--text-muted)">
                     Ring atoms (in order): ${atoms.map(atom => atom.label).join(' – ')}
                 </div>

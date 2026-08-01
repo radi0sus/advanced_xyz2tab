@@ -1,5 +1,5 @@
 > [!TIP]
-> **advanced_xyz2tab** is available as a static browser-based web app for interactive `.xyz` structure analysis, including 3D molecular visualization, bond and angle tables, saved planes, atom-to-plane distances, plane angles, Cremer-Pople ring puckering analysis, manual measurements, and Markdown/PNG export.  
+> **advanced_xyz2tab** is available as a static browser-based web app for interactive `.xyz` structure analysis, including 3D molecular visualization, bond and angle tables, saved planes, atom-to-plane distances, plane angles, Cremer-Pople ring puckering analysis, approximate point group symmetry detection, manual measurements, and Markdown/PNG export.  
 > 👉 Try it here: https://radi0sus.github.io/advanced_xyz2tab/  
 > 👉 Original CLI tool: https://github.com/radi0sus/xyz2tab
 
@@ -28,6 +28,7 @@ No installation and no Python environment are required for normal use.
   - angles between saved planes
   - Cremer-Pople ring puckering parameters (Q, θ, φ₂) for 5- and 6-membered rings
   - approximate ring conformation classification (chair, boat, twist-boat, envelope, half-chair, twist)
+  - approximate molecular point group symmetry, with a tolerance-adjustable, per-element error score
   - manual distances
   - manual angles
   - manual dihedrals
@@ -245,7 +246,31 @@ This is an approximation to the general conformation family and not an exact mat
 
 Rings with negligible puckering amplitude (`Q` &lt; 0.05 Å) are reported as "Planar".
 
-Saved rings are not deleted automatically if an atom is excluded. Instead, they are marked as invalid, the same way as saved planes.
+Saved rings are not deleted automatically if an atom is excluded, or if a manual bond that was part of the ring's connectivity is removed again. Instead, they are marked as invalid (with the reason — excluded atom(s) and/or missing bond(s) — shown in the ring table and details), the same way as saved planes.
+
+## Point group symmetry
+
+The `Symmetry` tab runs an approximate, geometry-only point group detection directly in the browser (no external library, no server round-trip).
+
+Rather than a strict yes/no test, every candidate symmetry element (rotation axis, mirror plane, inversion center, improper rotation) gets a continuous error value in Å: how well that operation actually maps the structure onto itself. A tolerance slider then decides which elements count as "present", and the standard textbook decision tree (main axis → perpendicular C₂'s? → σh? → σv/σd? → ...) is used to assign a point group from there.
+
+### Workflow
+
+- Computed automatically on load for structures up to 300 atoms.
+- Above that, use the `Analyze symmetry` button (avoids slowing down loading for large structures).
+- Adjust the tolerance slider to see how sensitive the assignment is to distortion; the defining elements and their individual error values are shown alongside the assigned group.
+
+### Scope
+
+- Solid: `C1`, `Cs`, `Ci`, `Cn`, `Cnv`, `Cnh`, `Dn`, `Dnh`, `Dnd`, `S2n` (n = 1–8), and the linear groups `C∞v`/`D∞h`.
+- Best effort: the cubic groups `T`, `Th`, `O`, `Td`, `Oh`. Their defining axes generally do not pass through any atom (they run through face/edge midpoints of the ligand polyhedron instead), so they require an additional combinatorial candidate search that is capped for cost reasons on very large ligand sets.
+- Out of scope: icosahedral (`Ih`).
+
+### Known limitations
+
+- The cubic branch additionally requires a full "D2 rotational core" (3 mutually perpendicular C₂ axes) before it is even considered, to avoid falsely classifying non-cubic (e.g. trigonally distorted, D3/D3d-type) coordination complexes as cubic just because a coincidentally-passing C3-like axis is found (any roughly-octahedral 6-ligand arrangement can produce such axes through alternating "face" directions, independent of the true molecular symmetry).
+- The `Dnd` vs. `Dnh` distinction, and the tetrahedral/octahedral sub-classification (`T`/`Th`/`O`/`Td`/`Oh`), rely on the presence/absence of specific elements rather than a full character-table match, and can be sensitive to real-world distortion.
+- As with the ring puckering analysis, this is an approximation intended for quick, interactive orientation, not a substitute for a dedicated symmetry package for publication-grade classification.
 
 ## Atom exclusion
 
@@ -312,7 +337,8 @@ The Markdown export includes, depending on available data:
 - saved planes
 - saved plane distances
 - saved plane angles
-- saved rings (Cremer-Pople parameters and per-atom out-of-plane displacements)
+- saved rings (Cremer-Pople parameters and per-atom out-of-plane displacements), with the same "invalid: excluded ..." / "invalid: missing bond ..." status as in the app
+- point group symmetry (assigned group and defining elements with their error, at the currently selected tolerance) — last, not prominent
 
 Bond and angle summaries are grouped by bond type or angle type and include:
 
@@ -387,5 +413,6 @@ See `LICENSE` for details.
 - Saved plane names are currently generated automatically.
 - Plane tables are currently not sortable.
 - Ring puckering conformation classification is an approximate, band-based assignment to the general conformation family, not an exact match to canonical IUPAC reference forms.
+- Point group symmetry detection is approximate and geometry-only; icosahedral (Ih) is not covered, and the cubic groups (T/Th/O/Td/Oh) are best-effort (see "Point group symmetry" above).
 - CSV and JSON export are not yet implemented.
 - Analysis state is currently stored only during the active browser session.

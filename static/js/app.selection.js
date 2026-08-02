@@ -363,20 +363,6 @@ Object.assign(App, {
                 ${plane ? `<div>Plane RMSD: <span class="result-value">${plane.rmsd.toFixed(4)} Å</span></div>` : ''}
             `;
 
-            if (connectivity && !connectivity.ok) {
-                const missingLabel = connectivity.missing
-                    .map(([a, b]) => `${a}–${b}`)
-                    .join(', ');
-
-                html += `
-                    <div style="margin-top:4px;color:var(--text-soft);font-size:12px">
-                        Not a bonded ring — missing bond(s): ${missingLabel}.
-                        Select atoms in ring (bond) order, or add the
-                        missing bond(s) with "add bond" first.
-                    </div>
-                `;
-            }
-
             if (plane && activePlane) {
                 const planeAngle = Chem.angleBetweenPlanes(activePlane.result, plane);
 

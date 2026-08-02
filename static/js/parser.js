@@ -109,6 +109,97 @@ const Parser = {
         return { natoms, comment, atoms, formula, fw, elCount, massFractions };
     },
 
+    // Lenient variant used for the "Paste .xyz" modal. It tolerates things a
+    // strict file parser shouldn't have to (stray blank lines anywhere,
+    // a missing/omitted atom-count or comment header), but is STRICT about
+    // each atom line actually being "element x y z" — it will not silently
+    // accept "x y z" (no element) or "element x y" (missing z, i.e. a
+    // truncated/cut-off line) the way a naive split-and-skip parser might.
+    parseLenient(text) {
+        const rawLines = text.split(/\r?\n/);
+
+        // Drop fully blank lines but remember original line numbers for
+        // error messages, so extra blank padding never breaks parsing.
+        const lines = [];
+        rawLines.forEach((line, idx) => {
+            if (line.trim() !== '') lines.push({ text: line, lineNo: idx + 1 });
+        });
+
+        if (lines.length === 0) throw new Error('No data found.');
+
+        const elementRe = /^[A-Za-z]{1,3}$/;
+        const numberRe = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
+
+        let dataLines = lines;
+        let comment = '';
+
+        // Standard header: first non-blank line is a bare integer atom count.
+        // If present, the following line is treated as the comment (also
+        // optional in the sense that it's simply whatever text is there).
+        if (/^\d+$/.test(lines[0].text.trim())) {
+            comment = lines[1] ? lines[1].text : '';
+            dataLines = lines.slice(2);
+        }
+
+        if (dataLines.length === 0) throw new Error('No atom coordinate lines found.');
+
+        const atoms = [];
+        const elCount = {};
+
+        for (const { text: raw, lineNo } of dataLines) {
+            const parts = raw.trim().split(/\s+/);
+
+            if (parts.length === 3) {
+                if (numberRe.test(parts[0])) {
+                    throw new Error(`Line ${lineNo}: found "x y z" but no element symbol — expected "element x y z".`);
+                }
+                throw new Error(`Line ${lineNo}: found "element x y" — the z coordinate is missing (truncated?). Expected "element x y z".`);
+            }
+            if (parts.length < 3) {
+                throw new Error(`Line ${lineNo}: expected "element x y z" (4 columns), found ${parts.length}.`);
+            }
+            if (parts.length > 4) {
+                throw new Error(`Line ${lineNo}: expected "element x y z" (4 columns), found ${parts.length} — remove any extra columns.`);
+            }
+
+            const [el, xs, ys, zs] = parts;
+
+            if (!elementRe.test(el)) {
+                throw new Error(`Line ${lineNo}: "${el}" doesn't look like an element symbol — expected "element x y z".`);
+            }
+            if (![xs, ys, zs].every(v => numberRe.test(v))) {
+                throw new Error(`Line ${lineNo}: "${xs} ${ys} ${zs}" — x, y and z must all be numbers.`);
+            }
+
+            const element = el.charAt(0).toUpperCase() + el.slice(1).toLowerCase();
+            elCount[element] = (elCount[element] || 0) + 1;
+
+            atoms.push({
+                index: atoms.length,
+                element,
+                x: parseFloat(xs),
+                y: parseFloat(ys),
+                z: parseFloat(zs),
+            });
+        }
+
+        this.labelAtoms(atoms, 0);
+
+        const formula = this._hillFormula(elCount);
+
+        let fw = 0;
+        for (const [el, cnt] of Object.entries(elCount)) {
+            fw += (this.atomicWeights[el] || 0) * cnt;
+        }
+
+        const massFractions = {};
+        for (const [el, cnt] of Object.entries(elCount)) {
+            massFractions[el] = ((this.atomicWeights[el] || 0) * cnt / fw) * 100;
+        }
+
+        return { natoms: atoms.length, comment, atoms, formula, fw, elCount, massFractions };
+    },
+
     _hillFormula(elCount) {
         const els = Object.keys(elCount);
         const order = [];

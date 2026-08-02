@@ -14,6 +14,7 @@ No installation and no Python environment are required for normal use.
 ## Features
 
 - Load `.xyz` molecular structures directly in the browser
+- **Paste XYZ data from clipboard** — paste xyz text directly (`Ctrl+V`/`Cmd+V`) into a modal instead of loading a file, for quickly trying out coordinates copied from somewhere else
 - Interactive 3D molecular viewer using 3Dmol.js
 - Calculation of:
   - sum formula
@@ -55,6 +56,8 @@ in a modern web browser.
 
 Then drag and drop an `.xyz` file into the app or use the `Open .xyz` button.
 
+Alternatively, click `Paste .xyz`, then click into the field and press `Ctrl+V`/`Cmd+V` to paste xyz text directly — it loads automatically as soon as you paste.
+
 The application runs locally in the browser. Molecular data are not uploaded to a server.
 
 ## XYZ file format
@@ -78,6 +81,15 @@ Element  x  y  z
 ```
 
 Coordinates are assumed to be Cartesian coordinates in Å.
+
+### Pasted data
+
+The `Paste .xyz` modal accepts the same format, but is more forgiving about surrounding whitespace:
+
+- extra/stray blank lines anywhere are ignored
+- the atom-count and comment header lines are optional — pasting just the `Element x y z` lines works too
+
+Each atom line is still validated strictly: it must be `Element x y z` (exactly 4 columns). Lines with only 3 columns — either `x y z` (missing element) or `Element x y` (missing z, e.g. a truncated/cut-off line) — are rejected with a specific error message and line number rather than silently accepted or dropped.
 
 ## Atom labels
 

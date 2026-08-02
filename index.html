@@ -12,6 +12,18 @@
     <div id="drop-overlay-inner">Drop .xyz file to open</div>
 </div>
 
+<div id="paste-modal">
+    <div id="paste-modal-box">
+        <h3>Paste XYZ data</h3>
+        <p id="paste-modal-hint">Click into the field below and press <code>Ctrl+V</code> (or <code>Cmd+V</code>) to paste. It loads automatically as soon as you paste.</p>
+        <textarea id="paste-textarea" placeholder="Click here, then paste (Ctrl+V)…" spellcheck="false"></textarea>
+        <div id="paste-modal-actions">
+            <button id="paste-cancel" class="btn">Cancel</button>
+            <button id="paste-confirm" class="btn btn-primary">Load</button>
+        </div>
+    </div>
+</div>
+
 <div id="app">
 
     <!-- Header -->
@@ -28,6 +40,7 @@
         
             <button id="btn-export-md" class="btn" disabled>Export .md</button>
             <button id="btn-export-png" class="btn" disabled>Export .png</button>
+            <button id="btn-paste-clipboard" class="btn" type="button">Paste .xyz</button>
             <label class="btn btn-primary" for="file-input">Open .xyz</label>
             <input type="file" id="file-input" accept=".xyz" style="display:none">
         </div>

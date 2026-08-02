@@ -320,6 +320,76 @@ body {
     font-weight: 600;
 }
 
+/* Paste-from-clipboard modal */
+#paste-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 20, 16, 0.55);
+}
+
+#paste-modal.active {
+    display: flex;
+}
+
+#paste-modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    padding: 20px;
+    width: 90%;
+    max-width: 480px;
+}
+
+#paste-modal-box h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    color: var(--text);
+}
+
+#paste-modal-hint {
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+
+#paste-modal-hint code {
+    font-family: var(--font-mono);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 4px;
+}
+
+#paste-textarea {
+    width: 100%;
+    height: 160px;
+    resize: vertical;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: 8px;
+    outline: none;
+}
+
+#paste-textarea:focus {
+    border-color: var(--accent);
+}
+
+#paste-modal-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 /* Main layout */
 #main-layout {
     flex: 1;

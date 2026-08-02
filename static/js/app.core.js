@@ -219,6 +219,9 @@ const App = {
 
         Viewer.setAtomClickCallback(idx => this.onAtomClick(idx));
 
+        // Paste-from-clipboard modal
+        this._wirePasteModal();
+
         // Init viewer
         Viewer.init('viewer-container');
 
@@ -240,6 +243,56 @@ const App = {
         };
 
         reader.readAsText(file);
+    },
+
+    loadPastedText(text) {
+        try {
+            this.parsed = Parser.parseLenient(text);
+            this.setup();
+            return true;
+        } catch (err) {
+            alert('Error parsing pasted .xyz data: ' + err.message);
+            return false;
+        }
+    },
+
+    _wirePasteModal() {
+        const modal = document.getElementById('paste-modal');
+        const textarea = document.getElementById('paste-textarea');
+        const openBtn = document.getElementById('btn-paste-clipboard');
+        const cancelBtn = document.getElementById('paste-cancel');
+        const confirmBtn = document.getElementById('paste-confirm');
+
+        const openModal = () => {
+            textarea.value = '';
+            modal.classList.add('active');
+            textarea.focus();
+        };
+        const closeModal = () => {
+            modal.classList.remove('active');
+            textarea.value = '';
+        };
+
+        openBtn.addEventListener('click', openModal);
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', e => {
+            if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+        });
+
+        // Loads automatically as soon as something is pasted in — the
+        // "Load" button remains as a fallback for manually typed/edited text.
+        textarea.addEventListener('paste', () => {
+            setTimeout(() => {
+                if (textarea.value.trim() && this.loadPastedText(textarea.value)) closeModal();
+            }, 0);
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            if (textarea.value.trim() && this.loadPastedText(textarea.value)) closeModal();
+        });
     },
 
     setup() {

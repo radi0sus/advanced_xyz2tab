@@ -142,6 +142,77 @@ const Tables = {
             .map(item => item.row);
     },
 
+    // Shared column definitions for sortable tables — used both when
+    // rendering the HTML tables (renderBonds, renderAngles, ...) and when
+    // exporting to Markdown, so the exported row order always matches
+    // exactly what is currently shown on screen (respects active sort).
+    _bondColumns: {
+        atom1: { type: 'text', get: b => b.labelI },
+        atom2: { type: 'text', get: b => b.labelJ },
+        distance: { type: 'number', get: b => b.dist },
+    },
+
+    _angleColumns: {
+        atomA: { type: 'text', get: a => a.labelA },
+        atomB: { type: 'text', get: a => a.labelB },
+        atomC: { type: 'text', get: a => a.labelC },
+        angle: { type: 'number', get: a => a.angle },
+    },
+
+    _manualDistanceColumns(atoms) {
+        return {
+            atoms: {
+                type: 'text',
+                get: m => this._measurementAtoms(m, atoms).map(a => a.label).join('–'),
+            },
+            distance: {
+                type: 'number',
+                get: m => {
+                    const selectedAtoms = this._measurementAtoms(m, atoms);
+                    return selectedAtoms.length === 2
+                        ? Chem.distance(selectedAtoms[0], selectedAtoms[1])
+                        : Number.NaN;
+                },
+            },
+        };
+    },
+
+    _manualAngleColumns(atoms) {
+        return {
+            atoms: {
+                type: 'text',
+                get: m => this._measurementAtoms(m, atoms).map(a => a.label).join('–'),
+            },
+            angle: {
+                type: 'number',
+                get: m => {
+                    const selectedAtoms = this._measurementAtoms(m, atoms);
+                    return selectedAtoms.length === 3
+                        ? Chem.calcAngle(selectedAtoms[0], selectedAtoms[1], selectedAtoms[2])
+                        : Number.NaN;
+                },
+            },
+        };
+    },
+
+    _manualDihedralColumns(atoms) {
+        return {
+            atoms: {
+                type: 'text',
+                get: m => this._measurementAtoms(m, atoms).map(a => a.label).join('–'),
+            },
+            dihedral: {
+                type: 'number',
+                get: m => {
+                    const selectedAtoms = this._measurementAtoms(m, atoms);
+                    return selectedAtoms.length === 4
+                        ? Chem.calcDihedral(...selectedAtoms)
+                        : Number.NaN;
+                },
+            },
+        };
+    },
+
     _selectRow(row, currentRef, callback, ...args) {
         // Deselect previous
         if (currentRef && currentRef !== row) {
@@ -495,22 +566,7 @@ const Tables = {
             return;
         }
 
-        const sortedDistances = this._sortRows('manualDistances', manualDistances, {
-            atoms: {
-                type: 'text',
-                get: m => this._measurementAtoms(m, atoms).map(a => a.label).join('–'),
-            },
-            distance: {
-                type: 'number',
-                get: m => {
-                    const selectedAtoms = this._measurementAtoms(m, atoms);
-
-                    return selectedAtoms.length === 2
-                        ? Chem.distance(selectedAtoms[0], selectedAtoms[1])
-                        : Number.NaN;
-                },
-            },
-        });
+        const sortedDistances = this._sortRows('manualDistances', manualDistances, this._manualDistanceColumns(atoms));
 
         let html = `
             <div class="table-label">Manual distances (${manualDistances.length})</div>
@@ -584,22 +640,7 @@ const Tables = {
             return;
         }
 
-        const sortedAngles = this._sortRows('manualAngles', manualAngles, {
-            atoms: {
-                type: 'text',
-                get: m => this._measurementAtoms(m, atoms).map(a => a.label).join('–'),
-            },
-            angle: {
-                type: 'number',
-                get: m => {
-                    const selectedAtoms = this._measurementAtoms(m, atoms);
-
-                    return selectedAtoms.length === 3
-                        ? Chem.calcAngle(selectedAtoms[0], selectedAtoms[1], selectedAtoms[2])
-                        : Number.NaN;
-                },
-            },
-        });
+        const sortedAngles = this._sortRows('manualAngles', manualAngles, this._manualAngleColumns(atoms));
 
         let html = `
             <div class="table-label">Manual angles (${manualAngles.length})</div>
@@ -675,22 +716,7 @@ const Tables = {
             return;
         }
 
-        const sortedDihedrals = this._sortRows('manualDihedrals', manualDihedrals, {
-            atoms: {
-                type: 'text',
-                get: m => this._measurementAtoms(m, atoms).map(a => a.label).join('–'),
-            },
-            dihedral: {
-                type: 'number',
-                get: m => {
-                    const selectedAtoms = this._measurementAtoms(m, atoms);
-
-                    return selectedAtoms.length === 4
-                        ? Chem.calcDihedral(...selectedAtoms)
-                        : Number.NaN;
-                },
-            },
-        });
+        const sortedDihedrals = this._sortRows('manualDihedrals', manualDihedrals, this._manualDihedralColumns(atoms));
 
         let html = `
             <div class="table-label">Manual dihedrals (${manualDihedrals.length})</div>
@@ -776,20 +802,7 @@ const Tables = {
     renderBonds(bondWrap, summaryWrap, statsWrap, bonds) {
         this._selectedBondRow = null;
 
-        const sortedBonds = this._sortRows('bonds', bonds, {
-            atom1: {
-                type: 'text',
-                get: b => b.labelI,
-            },
-            atom2: {
-                type: 'text',
-                get: b => b.labelJ,
-            },
-            distance: {
-                type: 'number',
-                get: b => b.dist,
-            },
-        });
+        const sortedBonds = this._sortRows('bonds', bonds, this._bondColumns);
 
         const groups = {};
 
@@ -914,24 +927,7 @@ const Tables = {
     renderAngles(angleWrap, summaryWrap, statsWrap, angles) {
         this._selectedAngleRow = null;
 
-        const sortedAngles = this._sortRows('angles', angles, {
-            atomA: {
-                type: 'text',
-                get: a => a.labelA,
-            },
-            atomB: {
-                type: 'text',
-                get: a => a.labelB,
-            },
-            atomC: {
-                type: 'text',
-                get: a => a.labelC,
-            },
-            angle: {
-                type: 'number',
-                get: a => a.angle,
-            },
-        });
+        const sortedAngles = this._sortRows('angles', angles, this._angleColumns);
 
         const groups = {};
 
@@ -1034,19 +1030,4 @@ const Tables = {
         statsWrap.innerHTML = '';
     },
 
-    // --- Dihedral single-result box ---
-    renderDihedral(container, angle, atoms) {
-        if (angle === null || atoms.length < 4) {
-            container.innerHTML = '';
-            return;
-        }
-
-        const labels = atoms.map(a => a.label).join(' – ');
-
-        container.innerHTML = `
-            <div class="result-box">
-                <div style="margin-bottom:4px;color:var(--text-muted);font-size:12px">${labels}</div>
-                <div>Dihedral angle: <span class="result-value">${angle.toFixed(3)}°</span></div>
-            </div>`;
-    },
 };

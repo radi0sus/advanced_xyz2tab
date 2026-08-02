@@ -41,9 +41,8 @@ const App = {
     _nextRingId: 1,
     _selectedRingRow: null,
 
-    // Dihedral result state
-    dihedralAtoms: [],
-    dihedralAngle: null,
+    // Dihedral results are stored in manualDihedrals (see app.measurements.js);
+    // there is no separate "current" single-result state anymore.
 
     init() {
         // File input
@@ -188,11 +187,6 @@ const App = {
             this.tolerancePct = parseFloat(e.target.value);
             document.getElementById('radius-value').textContent = this.tolerancePct.toFixed(1) + ' %';
             this.recalcBonds();
-        });
-
-        // Dihedral clear button
-        document.getElementById('btn-dihedral-clear').addEventListener('click', () => {
-            this.clearDihedral();
         });
 
         // Export
@@ -343,19 +337,12 @@ const App = {
         this.activeRingDetailsId = null;
         this._nextRingId = 1;
 
-        // Reset dihedral state
-        this.dihedralAtoms = [];
-        this.dihedralAngle = null;
-
         // Clear old viewer planes if a previous file had planes
         Viewer.clearPlane(1);
         Viewer.clearPlane(2);
 
         // Clear result areas
-        this._updateChips('dihedral');
-
         const clearIds = [
-            'dihedral-result',
             'current-plane-preview',
             'saved-planes-wrap',
             'saved-plane-details-wrap',
@@ -605,12 +592,6 @@ const App = {
         this._highlightedAtoms = new Set(
             [...this._highlightedAtoms].filter(atomIdx => !this.excludedAtoms.has(Number(atomIdx)))
         );
-
-        // If current dihedral contains an excluded atom, clear it.
-        if (this.dihedralAtoms.some(atom => this.excludedAtoms.has(atom.index))) {
-            this.dihedralAtoms = [];
-            this.dihedralAngle = null;
-        }
 
         // Remove saved manual measurements containing excluded atoms.
         this._purgeManualMeasurementsWithExcludedAtoms();

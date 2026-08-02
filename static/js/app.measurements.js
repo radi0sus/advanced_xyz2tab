@@ -116,18 +116,9 @@ Object.assign(App, {
             atoms: atoms.map(a => a.index),
         });
 
-        // Keep old single-result state compatible
-        this.dihedralAtoms = atoms;
-        this.dihedralAngle = Chem.calcDihedral(...atoms);
-        this._updateChips('dihedral');
+        const angle = Chem.calcDihedral(...atoms);
 
         this._renderTables();
-
-        Tables.renderDihedral(
-            document.getElementById('dihedral-result'),
-            this.dihedralAngle,
-            this.dihedralAtoms
-        );
 
         this._showSelectionOutput(`
             <div class="selection-output-title">Saved dihedral</div>
@@ -136,7 +127,7 @@ Object.assign(App, {
             </div>
             <div>
                 Dihedral:
-                <span class="result-value">${this.dihedralAngle.toFixed(3)}°</span>
+                <span class="result-value">${angle.toFixed(3)}°</span>
             </div>
         `);
 

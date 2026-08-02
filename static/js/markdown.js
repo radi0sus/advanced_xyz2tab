@@ -25,9 +25,6 @@ const Markdown = {
             symmetryTolerance = null,
             symmetrySkippedAuto = false,
 
-            dihedralAtoms = [],
-            dihedralAngle = null,
-
             excludedAtoms = new Set(),
             activeElements = new Set(),
             tolerancePct = null,
@@ -158,34 +155,11 @@ const Markdown = {
             return [angle.elA, angle.elB, angle.elC].join('–');
         };
 
-        const sortedBonds = [...bonds].sort((a, b) => {
-            const typeCmp = collator.compare(bondType(a), bondType(b));
-            if (typeCmp !== 0) return typeCmp;
-
-            const distCmp = a.dist - b.dist;
-            if (distCmp !== 0) return distCmp;
-
-            const labelICmp = collator.compare(a.labelI, b.labelI);
-            if (labelICmp !== 0) return labelICmp;
-
-            return collator.compare(a.labelJ, b.labelJ);
-        });
-
-        const sortedAngles = [...angles].sort((a, b) => {
-            const typeCmp = collator.compare(angleType(a), angleType(b));
-            if (typeCmp !== 0) return typeCmp;
-
-            const angleCmp = a.angle - b.angle;
-            if (angleCmp !== 0) return angleCmp;
-
-            const labelACmp = collator.compare(a.labelA, b.labelA);
-            if (labelACmp !== 0) return labelACmp;
-
-            const labelBCmp = collator.compare(a.labelB, b.labelB);
-            if (labelBCmp !== 0) return labelBCmp;
-
-            return collator.compare(a.labelC, b.labelC);
-        });
+        // Export order mirrors whatever is currently sorted/shown in the
+        // HTML tables (Tables._sortRows falls back to the given array's
+        // original order when no column sort is active).
+        const sortedBonds = Tables._sortRows('bonds', bonds, Tables._bondColumns);
+        const sortedAngles = Tables._sortRows('angles', angles, Tables._angleColumns);
 
         const sortedPlaneDistances = [...savedPlaneDistances].sort((a, b) => {
             const planeCmp = collator.compare(planeName(a.planeId), planeName(b.planeId));
@@ -276,7 +250,13 @@ const Markdown = {
             lines.push('| # | Atoms | Distance (Å) |');
             lines.push('|---|-------|--------------|');
 
-            manualDistances.forEach((m, i) => {
+            const sortedManualDistances = Tables._sortRows(
+                'manualDistances',
+                manualDistances,
+                Tables._manualDistanceColumns(atoms)
+            );
+
+            sortedManualDistances.forEach((m, i) => {
                 const selectedAtoms = (m.atoms || [])
                     .map(idx => getAtom(idx))
                     .filter(Boolean);
@@ -345,7 +325,13 @@ const Markdown = {
             lines.push('| # | Atoms | Angle (°) |');
             lines.push('|---|-------|-----------|');
 
-            manualAngles.forEach((m, i) => {
+            const sortedManualAngles = Tables._sortRows(
+                'manualAngles',
+                manualAngles,
+                Tables._manualAngleColumns(atoms)
+            );
+
+            sortedManualAngles.forEach((m, i) => {
                 const selectedAtoms = (m.atoms || [])
                     .map(idx => getAtom(idx))
                     .filter(Boolean);
@@ -418,7 +404,13 @@ const Markdown = {
             lines.push('| # | Atoms | Dihedral (°) |');
             lines.push('|---|-------|--------------|');
 
-            manualDihedrals.forEach((m, i) => {
+            const sortedManualDihedrals = Tables._sortRows(
+                'manualDihedrals',
+                manualDihedrals,
+                Tables._manualDihedralColumns(atoms)
+            );
+
+            sortedManualDihedrals.forEach((m, i) => {
                 const selectedAtoms = (m.atoms || [])
                     .map(idx => getAtom(idx))
                     .filter(Boolean);
@@ -432,20 +424,6 @@ const Markdown = {
                 );
             });
 
-            lines.push('');
-        }
-
-        // --- Current dihedral result, only if not already saved as manual dihedral ---
-        if (
-            manualDihedrals.length === 0 &&
-            dihedralAngle !== null &&
-            dihedralAtoms &&
-            dihedralAtoms.length === 4
-        ) {
-            lines.push('## Current Dihedral Result');
-            lines.push('');
-            lines.push(`**Atoms:** ${mdCell(dihedralAtoms.map(a => a.label).join(' – '))}  `);
-            lines.push(`**Dihedral:** ${dihedralAngle.toFixed(3)}°`);
             lines.push('');
         }
 

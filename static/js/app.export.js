@@ -28,9 +28,6 @@ Object.assign(App, {
             symmetryTolerance: this.symmetryTolerance,
             symmetrySkippedAuto: this.symmetrySkippedAuto,
 
-            dihedralAtoms: this.dihedralAtoms,
-            dihedralAngle: this.dihedralAngle,
-
             excludedAtoms: this.excludedAtoms,
             activeElements: this.activeElements,
             tolerancePct: this.tolerancePct,

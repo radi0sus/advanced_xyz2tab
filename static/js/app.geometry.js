@@ -745,55 +745,7 @@ Object.assign(App, {
         Viewer.clearPlane(2);
     },
 
-    // --- Dihedral ---
-
-    _updateChips(type) {
-        if (type !== 'dihedral') return;
-
-        const container = document.getElementById('dihedral-chips');
-        if (!container) return;
-
-        container.innerHTML = '';
-
-        for (const atom of this.dihedralAtoms) {
-            const chip = document.createElement('span');
-            chip.className = 'chip';
-
-            chip.innerHTML = `
-                ${atom.label}
-                <span class="chip-remove" data-idx="${atom.index}">×</span>
-            `;
-
-            chip.querySelector('.chip-remove').addEventListener('click', () => {
-                this._removeAtomFromResult('dihedral', atom.index);
-            });
-
-            container.appendChild(chip);
-        }
-    },
-
-    _removeAtomFromResult(type, idx) {
-        idx = Number(idx);
-
-        if (type === 'dihedral') {
-            this.dihedralAtoms = this.dihedralAtoms.filter(a => a.index !== idx);
-            this.dihedralAngle = this.dihedralAtoms.length === 4
-                ? Chem.calcDihedral(...this.dihedralAtoms)
-                : null;
-        }
-
-        this._refreshGeometryResults();
-    },
-
     _refreshGeometryResults() {
-        this._updateChips('dihedral');
-
-        Tables.renderDihedral(
-            document.getElementById('dihedral-result'),
-            this.dihedralAngle,
-            this.dihedralAtoms
-        );
-
         if (typeof this._renderPlaneManagement === 'function') {
             this._renderPlaneManagement();
         }
@@ -803,13 +755,5 @@ Object.assign(App, {
         }
 
         this._renderSelectionToolbar();
-    },
-
-    clearDihedral() {
-        this.dihedralAtoms = [];
-        this.dihedralAngle = null;
-
-        this._refreshGeometryResults();
-        this._clearSelection();
     },
 });

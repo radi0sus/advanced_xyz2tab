@@ -105,6 +105,10 @@ const App = {
 
                 tab.classList.add('active');
                 document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+
+                if (tab.dataset.tab === 'symmetry') {
+                    this._ensureSymmetryFresh();
+                }
             });
         });
 
@@ -414,6 +418,8 @@ const App = {
     },
 
     applyFilter() {
+        this._markSymmetryDirty();
+
         this.filteredBonds = Chem.filterBonds(this.allBonds, this.activeElements);
         this.filteredAngles = Chem.filterAngles(this.allAngles, this.activeElements);
 

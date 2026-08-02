@@ -256,8 +256,10 @@ Rather than a strict yes/no test, every candidate symmetry element (rotation axi
 
 ### Workflow
 
-- Computed automatically on load for structures up to 300 atoms.
+- Computed automatically on load for structures up to 300 active atoms.
 - Above that, use the `Analyze symmetry` button (avoids slowing down loading for large structures).
+- Respects the current atom exclusion and active-element filter — excluded/hidden atoms are left out of the calculation, so you can e.g. hide peripheral ligand atoms and check the symmetry of just the metal core.
+- Recomputation is lazy, not instant: excluding an atom or toggling an element doesn't immediately re-run the (expensive) detection. It's marked stale and only actually recomputed the next time it's needed — when the Symmetry tab is opened, or a Markdown export is generated — so filtering stays responsive even on larger structures.
 - Adjust the tolerance slider to see how sensitive the assignment is to distortion; the defining elements and their individual error values are shown alongside the assigned group.
 
 ### Scope

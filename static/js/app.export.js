@@ -3,6 +3,8 @@
 Object.assign(App, {
 
     exportMd() {
+        this._ensureSymmetryFresh();
+
         const md = Markdown.toMarkdown({
             parsed: this.parsed,
 

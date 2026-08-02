@@ -639,7 +639,6 @@ const Symmetry = {
         const perpC2 = bestOf(axes.filter(a => a.order % 2 === 0 && perpendicular(a.dir, mainAxis.dir)));
         const sigmaH = bestOf(planes.filter(p => parallel(p.normal, mainAxis.dir)));
         const vertPlane = bestOf(planes.filter(p => perpendicular(p.normal, mainAxis.dir)));
-        const Sn2 = bestOf(improperAxes.filter(a => a.order === 2 * n && parallel(a.dir, mainAxis.dir)));
         const bestPlaneOverall = bestOf(planes);
 
         add(`C${n}`, mainAxis.error);
@@ -648,7 +647,16 @@ const Symmetry = {
         add(`D${n}`, Math.max(mainAxis.error, e(perpC2)));
         add(`D${n}h`, Math.max(mainAxis.error, e(perpC2), e(sigmaH)));
         add(`D${n}d`, Math.max(mainAxis.error, e(perpC2), e(vertPlane)));
-        if (n % 2 === 0) add(`S${2 * n}`, Math.max(mainAxis.error, e(Sn2)));
+
+        // Best standalone Sn anywhere in the molecule — NOT required to
+        // coincide with the main proper axis above. An Sn point group only
+        // needs its own improper axis; tying this to whichever axis won the
+        // (order, error)-based main-axis selection would hide a genuinely
+        // good Sn that happens to sit on a different (e.g. perpendicular)
+        // axis, understating how close the molecule actually is to some Sn
+        // symmetry.
+        const bestSn = bestOf(improperAxes);
+        if (bestSn) add(`S${bestSn.order}`, bestSn.error);
 
         add('Cs', bestPlaneOverall ? bestPlaneOverall.error : NOT_FOUND);
         add('Ci', inversionError);

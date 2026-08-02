@@ -264,9 +264,9 @@ Rather than a strict yes/no test, every candidate symmetry element (rotation axi
 
 ### Scope
 
-- Solid: `C1`, `Cs`, `Ci`, `Cn`, `Cnv`, `Cnh`, `Dn`, `Dnh`, `Dnd`, `S2n` (n = 1–8), and the linear groups `C∞v`/`D∞h`.
+- Solid: `C1`, `Cs`, `Ci`, `Cn`, `Cnv`, `Cnh`, `Dn`, `Dnh`, `Dnd`, `S2n` (n = 1–8), the linear groups `C∞v`/`D∞h`, and `Kh` for the degenerate single-atom (or coincident-point) case — a lone atom has no distinguished axis at all, so it's the full spherical symmetry group, not D∞h.
 - Best effort: the cubic groups `T`, `Th`, `O`, `Td`, `Oh`. Their defining axes generally do not pass through any atom (they run through face/edge midpoints of the ligand polyhedron instead), so they require an additional combinatorial candidate search that is capped for cost reasons on very large ligand sets.
-- Out of scope: icosahedral (`Ih`).
+- Out of scope: icosahedral (`I`, `Ih`) — rare in practice for this tool's typical inputs, and the added complexity (candidate generation through face/edge midpoints of a 12-vertex polyhedron, plus false-positive guarding comparable to what the cubic groups needed) wasn't judged worth it over a small number of real-world cases.
 
 ### Known limitations
 
@@ -415,6 +415,6 @@ See `LICENSE` for details.
 - Saved plane names are currently generated automatically.
 - Plane tables are currently not sortable.
 - Ring puckering conformation classification is an approximate, band-based assignment to the general conformation family, not an exact match to canonical IUPAC reference forms.
-- Point group symmetry detection is approximate and geometry-only; icosahedral (Ih) is not covered, and the cubic groups (T/Th/O/Td/Oh) are best-effort (see "Point group symmetry" above).
+- Point group symmetry detection is approximate and geometry-only; icosahedral (I/Ih) is not covered, and the cubic groups (T/Th/O/Td/Oh) are best-effort (see "Point group symmetry" above).
 - CSV and JSON export are not yet implemented.
 - Analysis state is currently stored only during the active browser session.

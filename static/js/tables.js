@@ -235,7 +235,7 @@ const Tables = {
                 <div style="margin-top:4px;color:var(--text-muted);font-size:12.5px">
                     Approximate, geometry-only detection (no external library).
                     Best-effort for cubic groups (${['Td', 'Oh', 'T', 'Th', 'O'].map(g => Format.pointGroupHtml(g)).join('/')});
-                    icosahedral (${Format.pointGroupHtml('Ih')}) is not covered.
+                    icosahedral (${Format.pointGroupHtml('I')}/${Format.pointGroupHtml('Ih')}) is not covered.
                 </div>
             </div>
             <div id="symmetry-results-body">${initialBodyHtml}</div>
@@ -257,6 +257,7 @@ const Tables = {
 
         let html = `<div class="result-box" style="margin-bottom:8px">
             <div><b>Point group:</b> <span class="result-value">${Format.pointGroupHtml(classified.pointGroup)}</span></div>
+            ${raw && raw.isPoint ? '<div style="color:var(--text-muted);font-size:12.5px;margin-top:2px">Single atom (or coincident-point input): full spherical symmetry, no distinguished axis</div>' : ''}
             ${raw && raw.isLinear ? '<div style="color:var(--text-muted);font-size:12.5px;margin-top:2px">Linear molecule</div>' : ''}
         </div>`;
 

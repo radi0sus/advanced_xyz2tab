@@ -167,7 +167,8 @@ const Symmetry = {
 
         const relDiff = (a, b) => Math.abs(a - b) / maxI;
 
-        const isLinear = relDiff(sortedVals[0], 0) < 0.01 && sortedVals[0] < 0.01 * maxI;
+        const isPoint = n === 1 || Math.abs(sortedVals[2]) < 1e-8;
+        const isLinear = !isPoint && relDiff(sortedVals[0], 0) < 0.01 && sortedVals[0] < 0.01 * maxI;
 
         // atoms-by-element lookup, reused by every candidate test below.
         const atomsByElement = new Map();
@@ -177,6 +178,20 @@ const Symmetry = {
         }
         const elementsArr = atoms.map(a => a.element);
         const allCoords = atoms.map(a => ({ x: a.x, y: a.y, z: a.z }));
+
+        // --- a single atom (or degenerate all-atoms-coincident input) has no
+        // distinguished axis at all — every direction is an equivalent
+        // infinite-fold rotation axis, plus every mirror plane and the
+        // inversion center. That's Kh (full rotation-reflection symmetry),
+        // a strictly higher symmetry than D∞h, which requires one special
+        // axis direction (i.e. at least 2 atoms). ---
+        if (isPoint) {
+            return {
+                isPoint: true,
+                atomCount: n,
+                com,
+            };
+        }
 
         // --- linear molecules are a fully separate, simple case ---
         if (isLinear) {
@@ -362,6 +377,14 @@ const Symmetry = {
     // ==========================================================
     classify(raw, tol) {
         const pass = e => e !== undefined && e !== null && e <= tol;
+
+        if (raw.isPoint) {
+            return {
+                pointGroup: 'Kh',
+                elements: [],
+                candidates: [{ name: 'Kh', error: 0 }],
+            };
+        }
 
         if (raw.isLinear) {
             const group = pass(raw.inversionError) ? 'D\u221eh' : 'C\u221ev';
@@ -586,6 +609,11 @@ const Symmetry = {
         const add = (name, error) => results.push({ name, error });
         const NOT_FOUND = 999; // sentinel: this element type wasn't found at all
 
+        if (raw.isPoint) {
+            add('Kh', 0);
+            return results;
+        }
+
         if (raw.isLinear) {
             add('C\u221ev', 0);
             add('D\u221eh', raw.inversionError);
@@ -689,6 +717,7 @@ const Symmetry = {
         const result = this.classify(raw, toleranceAngstrom);
         result.atomCount = raw.atomCount;
         result.isLinear = !!raw.isLinear;
+        result.isPoint = !!raw.isPoint;
         return { raw, result };
     },
 };

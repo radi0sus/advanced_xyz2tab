@@ -681,7 +681,7 @@ const Markdown = {
             const cubicNames = ['T', 'Th', 'O', 'Td', 'Oh'].map(g => Format.pointGroupHtml(g)).join('/');
             lines.push(
                 `_Approximate, geometry-only detection; best-effort for cubic ` +
-                `groups (${cubicNames}), icosahedral (${Format.pointGroupHtml('Ih')}) not covered._`
+                `groups (${cubicNames}), icosahedral (${Format.pointGroupHtml('I')}/${Format.pointGroupHtml('Ih')}) not covered._`
             );
             lines.push('');
         } else if (symmetrySkippedAuto) {

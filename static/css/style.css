@@ -1070,7 +1070,8 @@ th.sortable-th.sorted .sort-indicator {
 #manual-dihedrals-wrap .data-table td:nth-child(2),
 #info-table-wrap .data-table td:nth-child(1),
 #bonds-summary-wrap .data-table td:nth-child(1),
-#angles-summary-wrap .data-table td:nth-child(1) {
+#angles-summary-wrap .data-table td:nth-child(1),
+#symmetry-results-body .data-table td:nth-child(1) {
     font-weight: 600;
     color: var(--text);
 }

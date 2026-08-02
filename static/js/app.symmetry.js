@@ -57,10 +57,17 @@ Object.assign(App, {
     },
 
     // Cheap: just flags the current result as stale. Called whenever the
-    // active atom set changes (atom exclusion, element filter toggles).
+    // active atom set changes (atom exclusion, element filter toggles). If
+    // the Symmetry tab happens to be open right now, recompute immediately
+    // so the change feels live instead of only updating on the next visit.
     _markSymmetryDirty() {
         if (!this.symmetryRaw && !this.symmetrySkippedAuto) return; // nothing to go stale yet
         this.symmetryDirty = true;
+
+        const tab = document.getElementById('tab-symmetry');
+        if (tab && tab.classList.contains('active')) {
+            this._ensureSymmetryFresh();
+        }
     },
 
     // Recomputes only if needed (dirty, or never run yet). Cheap no-op

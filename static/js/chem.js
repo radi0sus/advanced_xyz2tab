@@ -8,6 +8,41 @@ const Chem = {
         return Math.sqrt(dx*dx + dy*dy + dz*dz);
     },
 
+    // Atomic number, derived from Parser.atomicWeights (already ordered
+    // H, He, Li, ... by increasing Z), so no separate table is needed.
+    // Unknown symbols sort last (0).
+    _atomicNumberCache: null,
+
+    atomicNumber(el) {
+        if (!this._atomicNumberCache) {
+            this._atomicNumberCache = new Map(
+                Object.keys(Parser.atomicWeights).map((symbol, i) => [symbol, i + 1])
+            );
+        }
+
+        return this._atomicNumberCache.get(el) || 0;
+    },
+
+    // Sort key for grouping bond/angle "types" (e.g. in the Bond/Angle
+    // Summary tables) by chemical significance rather than alphabetically:
+    // the elements involved, ranked by descending atomic number. Works the
+    // same way for 2-element bond types and 3-element angle types.
+    groupTypeSortKey(elements) {
+        return elements.map(el => this.atomicNumber(el)).sort((a, b) => b - a);
+    },
+
+    compareGroupTypeKeys(keyA, keyB) {
+        const len = Math.max(keyA.length, keyB.length);
+
+        for (let i = 0; i < len; i++) {
+            const a = keyA[i] ?? -1;
+            const b = keyB[i] ?? -1;
+            if (a !== b) return b - a;
+        }
+
+        return 0;
+    },
+
     // --- Bond detection ---
     // tolerance in percent (e.g. 8 = 8%)
     findBonds(atoms, tolerancePct) {

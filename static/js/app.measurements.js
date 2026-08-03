@@ -231,12 +231,4 @@ Object.assign(App, {
         return result;
     },
 
-    _purgeManualMeasurementsWithExcludedAtoms() {
-        const hasExcluded = m =>
-            (m.atoms || []).some(idx => this.excludedAtoms.has(Number(idx)));
-
-        this.manualDistances = this.manualDistances.filter(m => !hasExcluded(m));
-        this.manualAngles = this.manualAngles.filter(m => !hasExcluded(m));
-        this.manualDihedrals = this.manualDihedrals.filter(m => !hasExcluded(m));
-    },
 });

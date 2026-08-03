@@ -482,7 +482,11 @@ const App = {
 
         Viewer.updateBonds(this.filteredBonds, this.activeElements, this.excludedAtoms);
 
-        this._renderSelectionToolbar();
+        // Planes/rings/dihedrals can become invalid purely from an element
+        // being hidden (not just an explicit atom exclusion), so their
+        // status needs refreshing here too.
+        this._refreshGeometryResults();
+
         this._renderAtomList();
         this._updateSelectionPreview();
     },
@@ -494,6 +498,8 @@ const App = {
             document.getElementById('manual-distances-wrap'),
             this.manualDistances,
             atoms,
+            this.excludedAtoms,
+            this.activeElements,
         );
 
         Tables.renderBonds(
@@ -507,6 +513,8 @@ const App = {
             document.getElementById('manual-angles-wrap'),
             this.manualAngles,
             atoms,
+            this.excludedAtoms,
+            this.activeElements,
         );
 
         Tables.renderAngles(
@@ -520,6 +528,8 @@ const App = {
             document.getElementById('manual-dihedrals-wrap'),
             this.manualDihedrals,
             atoms,
+            this.excludedAtoms,
+            this.activeElements,
         );
     },
 
@@ -592,9 +602,6 @@ const App = {
         this._highlightedAtoms = new Set(
             [...this._highlightedAtoms].filter(atomIdx => !this.excludedAtoms.has(Number(atomIdx)))
         );
-
-        // Remove saved manual measurements containing excluded atoms.
-        this._purgeManualMeasurementsWithExcludedAtoms();
 
         // Recalculate bonds and angles without excluded atoms.
         this.recalcBonds();

@@ -239,6 +239,20 @@ const Tables = {
         return atoms.find ? atoms.find(a => Number(a.index) === idx) : atoms[idx];
     },
 
+    // Local counterpart of App._unavailableAtomInfo — Tables doesn't share
+    // App's instance state, so excludedAtoms/activeElements are passed in
+    // explicitly by the caller (see _renderTables in app.core.js).
+    _unavailableInfo(atom, excludedAtoms, activeElements) {
+        if (!atom) return { label: '?', reason: 'missing' };
+        if (excludedAtoms && excludedAtoms.has(atom.index)) return { label: atom.label, reason: 'excluded' };
+
+        if (activeElements && activeElements.size > 0 && !activeElements.has(atom.element)) {
+            return { label: atom.label, reason: 'hidden' };
+        }
+
+        return null;
+    },
+
     _measurementAtoms(measurement, atoms) {
         const indices = measurement.atoms || [];
 
@@ -558,7 +572,7 @@ const Tables = {
     },
 
     // --- Manual distances: saved measurements, NOT part of bond graph/statistics ---
-    renderManualDistances(container, manualDistances, atoms) {
+    renderManualDistances(container, manualDistances, atoms, excludedAtoms = new Set(), activeElements = null) {
         if (!container) return;
 
         if (!manualDistances || manualDistances.length === 0) {
@@ -576,6 +590,7 @@ const Tables = {
                         <th>#</th>
                         ${this._sortTh('Atoms', 'manualDistances', 'atoms')}
                         ${this._sortTh('Distance (Å)', 'manualDistances', 'distance')}
+                        <th>Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -590,11 +605,22 @@ const Tables = {
             const d = Chem.distance(a, b);
             const id = this._measurementId(m, manualDistances.indexOf(m));
 
+            const unavailable = selectedAtoms
+                .map(atom => this._unavailableInfo(atom, excludedAtoms, activeElements))
+                .filter(Boolean);
+
+            const status = unavailable.length
+                ? `invalid: ${unavailable.map(u => `${u.label} (${u.reason})`).join(', ')}`
+                : 'valid';
+
+            const invalid = status !== 'valid';
+
             html += `
-                <tr>
+                <tr class="${invalid ? 'inactive' : ''}">
                     <td>${idx + 1}</td>
                     <td>${a.label}–${b.label}</td>
                     <td>${d.toFixed(4)}</td>
+                    <td>${status}</td>
                     <td>
                         <button
                             class="btn-small btn-danger manual-distance-remove"
@@ -615,7 +641,7 @@ const Tables = {
         container.innerHTML = html;
 
         this._bindSortHeaders(container, 'manualDistances', () => {
-            this.renderManualDistances(container, manualDistances, atoms);
+            this.renderManualDistances(container, manualDistances, atoms, excludedAtoms, activeElements);
         });
 
         container.querySelectorAll('.manual-distance-remove').forEach(btn => {
@@ -632,7 +658,7 @@ const Tables = {
     },
 
     // --- Manual angles: saved measurements, NOT part of automatic angle statistics ---
-    renderManualAngles(container, manualAngles, atoms) {
+    renderManualAngles(container, manualAngles, atoms, excludedAtoms = new Set(), activeElements = null) {
         if (!container) return;
 
         if (!manualAngles || manualAngles.length === 0) {
@@ -650,6 +676,7 @@ const Tables = {
                         <th>#</th>
                         ${this._sortTh('Atoms', 'manualAngles', 'atoms')}
                         ${this._sortTh('Angle (°)', 'manualAngles', 'angle')}
+                        <th>Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -664,11 +691,22 @@ const Tables = {
             const angle = Chem.calcAngle(a, b, c);
             const id = this._measurementId(m, manualAngles.indexOf(m));
 
+            const unavailable = selectedAtoms
+                .map(atom => this._unavailableInfo(atom, excludedAtoms, activeElements))
+                .filter(Boolean);
+
+            const status = unavailable.length
+                ? `invalid: ${unavailable.map(u => `${u.label} (${u.reason})`).join(', ')}`
+                : 'valid';
+
+            const invalid = status !== 'valid';
+
             html += `
-                <tr>
+                <tr class="${invalid ? 'inactive' : ''}">
                     <td>${idx + 1}</td>
                     <td>${a.label}–${b.label}–${c.label}</td>
                     <td>${angle.toFixed(3)}</td>
+                    <td>${status}</td>
                     <td>
                         <button
                             class="btn-small btn-danger manual-angle-remove"
@@ -689,7 +727,7 @@ const Tables = {
         container.innerHTML = html;
 
         this._bindSortHeaders(container, 'manualAngles', () => {
-            this.renderManualAngles(container, manualAngles, atoms);
+            this.renderManualAngles(container, manualAngles, atoms, excludedAtoms, activeElements);
         });
 
         container.querySelectorAll('.manual-angle-remove').forEach(btn => {
@@ -706,7 +744,7 @@ const Tables = {
     },
 
     // --- Manual dihedrals: saved measurements ---
-    renderManualDihedrals(container, manualDihedrals, atoms) {
+    renderManualDihedrals(container, manualDihedrals, atoms, excludedAtoms = new Set(), activeElements = null) {
         if (!container) return;
 
         this._selectedDihedralRow = null;
@@ -726,6 +764,7 @@ const Tables = {
                         <th>#</th>
                         ${this._sortTh('Atoms', 'manualDihedrals', 'atoms')}
                         ${this._sortTh('Dihedral (°)', 'manualDihedrals', 'dihedral')}
+                        <th>Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -740,11 +779,22 @@ const Tables = {
             const labels = selectedAtoms.map(a => a.label).join('–');
             const id = this._measurementId(m, manualDihedrals.indexOf(m));
 
+            const unavailable = selectedAtoms
+                .map(atom => this._unavailableInfo(atom, excludedAtoms, activeElements))
+                .filter(Boolean);
+
+            const status = unavailable.length
+                ? `invalid: ${unavailable.map(u => `${u.label} (${u.reason})`).join(', ')}`
+                : 'valid';
+
+            const invalid = status !== 'valid';
+
             html += `
-                <tr data-atoms="${selectedAtoms.map(a => a.index).join(',')}">
+                <tr class="${invalid ? 'inactive' : ''}" data-atoms="${selectedAtoms.map(a => a.index).join(',')}">
                     <td>${idx + 1}</td>
                     <td>${labels}</td>
                     <td>${angle.toFixed(3)}</td>
+                    <td>${status}</td>
                     <td>
                         <button
                             class="btn-small btn-danger manual-dihedral-remove"
@@ -765,7 +815,7 @@ const Tables = {
         container.innerHTML = html;
 
         this._bindSortHeaders(container, 'manualDihedrals', () => {
-            this.renderManualDihedrals(container, manualDihedrals, atoms);
+            this.renderManualDihedrals(container, manualDihedrals, atoms, excludedAtoms, activeElements);
         });
 
         container.querySelectorAll('tr[data-atoms]').forEach(row => {
@@ -908,7 +958,14 @@ const Tables = {
             + '<th>Bond</th><th>Count</th><th>Min (Å)</th><th>Max (Å)</th><th>Mean (Å)</th><th>Std dev (Å)</th>'
             + '</tr></thead><tbody>';
 
-        for (const [key, dists] of Object.entries(groups)) {
+        const sortedGroupEntries = Object.entries(groups).sort(([a], [b]) =>
+            Chem.compareGroupTypeKeys(
+                Chem.groupTypeSortKey(a.split('–')),
+                Chem.groupTypeSortKey(b.split('–'))
+            )
+        );
+
+        for (const [key, dists] of sortedGroupEntries) {
             const s = Chem.stats(dists);
 
             sh += `<tr><td>${key}</td><td>${s.n}</td>
@@ -1015,7 +1072,14 @@ const Tables = {
             + '<th>Angle type</th><th>Count</th><th>Min (°)</th><th>Max (°)</th><th>Mean (°)</th><th>Std dev (°)</th>'
             + '</tr></thead><tbody>';
 
-        for (const [key, vals] of Object.entries(groups)) {
+        const sortedGroupEntries = Object.entries(groups).sort(([a], [b]) =>
+            Chem.compareGroupTypeKeys(
+                Chem.groupTypeSortKey(a.split('–')),
+                Chem.groupTypeSortKey(b.split('–'))
+            )
+        );
+
+        for (const [key, vals] of sortedGroupEntries) {
             const s = Chem.stats(vals);
 
             sh += `<tr><td>${key}</td><td>${s.n}</td>

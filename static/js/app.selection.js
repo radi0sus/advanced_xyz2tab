@@ -119,6 +119,29 @@ Object.assign(App, {
         return this.parsed.atoms.find(a => a.index === Number(idx)) || null;
     },
 
+    // An atom is unavailable for geometry analysis (planes, rings, manual
+    // distances/angles/dihedrals) if it's either explicitly excluded, or
+    // its element is currently hidden via the element filter. Both make the
+    // atom unusable the same way, unlike the earlier code which only ever
+    // checked `excludedAtoms` and treated a hidden element as still "valid".
+    _unavailableAtomInfo(idx) {
+        idx = Number(idx);
+        const atom = this._getAtomByIndex(idx);
+
+        if (!atom) return { label: `#${idx}`, reason: 'missing' };
+        if (this.excludedAtoms.has(idx)) return { label: atom.label, reason: 'excluded' };
+
+        if (this.activeElements && this.activeElements.size > 0 && !this.activeElements.has(atom.element)) {
+            return { label: atom.label, reason: 'hidden' };
+        }
+
+        return null;
+    },
+
+    _isAtomUnavailable(idx) {
+        return this._unavailableAtomInfo(idx) !== null;
+    },
+
     _getSelectedAtoms() {
         return this.selection
             .map(idx => this._getAtomByIndex(idx))

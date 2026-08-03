@@ -25,7 +25,7 @@ Object.assign(App, {
     _isPlaneInvalid(plane) {
         if (!plane || !plane.atomIndices) return true;
 
-        return plane.atomIndices.some(idx => this.excludedAtoms.has(Number(idx)));
+        return plane.atomIndices.some(idx => this._isAtomUnavailable(idx));
     },
 
     _getActivePlane() {
@@ -393,15 +393,15 @@ Object.assign(App, {
             const invalid = this._isPlaneInvalid(plane);
             const isActive = String(this.activePlaneId) === String(plane.id) && !invalid;
 
-            const excludedAtomLabels = atoms
-                .filter(atom => this.excludedAtoms.has(atom.index))
-                .map(atom => atom.label);
+            const unavailable = atoms
+                .map(atom => this._unavailableAtomInfo(atom.index))
+                .filter(Boolean);
 
             let status = 'valid';
 
             if (invalid) {
-                status = excludedAtomLabels.length
-                    ? `invalid: excluded ${excludedAtomLabels.join(', ')}`
+                status = unavailable.length
+                    ? `invalid: ${unavailable.map(u => `${u.label} (${u.reason})`).join(', ')}`
                     : 'invalid';
             }
 
@@ -551,10 +551,10 @@ Object.assign(App, {
     
             atoms.forEach(atom => {
                 const d = this._distanceAtomToPlane(atom, plane.result);
-                const excluded = this.excludedAtoms.has(atom.index);
+                const unavailable = this._isAtomUnavailable(atom.index);
     
                 html += `
-                    <tr class="${excluded ? 'inactive' : ''}">
+                    <tr class="${unavailable ? 'inactive' : ''}">
                         <td>${atom.label}</td>
                         <td>${d.toFixed(4)}</td>
                     </tr>
@@ -600,7 +600,8 @@ Object.assign(App, {
             const atom = this._getAtomByIndex(measurement.atomIndex);
 
             const planeInvalid = plane ? this._isPlaneInvalid(plane) : true;
-            const atomExcluded = atom ? this.excludedAtoms.has(atom.index) : true;
+            const atomInfo = atom ? this._unavailableAtomInfo(atom.index) : null;
+            const atomUnavailable = !atom || atomInfo !== null;
 
             let status = 'valid';
 
@@ -608,12 +609,12 @@ Object.assign(App, {
                 status = 'invalid: plane removed';
             } else if (!atom) {
                 status = 'invalid: atom missing';
-            } else if (planeInvalid && atomExcluded) {
-                status = 'invalid: plane and atom excluded';
+            } else if (planeInvalid && atomUnavailable) {
+                status = `invalid: plane and atom ${atomInfo.reason}`;
             } else if (planeInvalid) {
                 status = 'invalid: plane';
-            } else if (atomExcluded) {
-                status = 'invalid: atom excluded';
+            } else if (atomUnavailable) {
+                status = `invalid: atom ${atomInfo.reason}`;
             }
 
             const invalid = status !== 'valid';

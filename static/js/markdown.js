@@ -64,6 +64,20 @@ const Markdown = {
             return atom ? atom.label : String(idx);
         };
 
+        // Mirrors Tables._unavailableInfo / the HTML "Status" column for
+        // manual distances/angles/dihedrals: an atom counts as unavailable
+        // if it's explicitly excluded, or its element is hidden by the
+        // active-element filter.
+        const measurementStatus = selectedAtoms => {
+            const unavailable = selectedAtoms
+                .map(atom => Tables._unavailableInfo(atom, excludedAtoms, activeElements))
+                .filter(Boolean);
+
+            return unavailable.length
+                ? `invalid: ${unavailable.map(u => `${u.label} (${u.reason})`).join(', ')}`
+                : 'valid';
+        };
+
         const planeName = id => {
             const plane = getPlane(id);
             return plane ? plane.name : '(removed)';
@@ -77,10 +91,20 @@ const Markdown = {
                 .filter(Boolean);
         };
 
+        const isAtomUnavailable = idx => {
+            idx = Number(idx);
+            if (excludedAtoms.has(idx)) return true;
+
+            const atom = getAtom(idx);
+            if (!atom) return true;
+
+            return activeElements && activeElements.size > 0 && !activeElements.has(atom.element);
+        };
+
         const isPlaneInvalid = plane => {
             if (!plane || !plane.atomIndices) return true;
 
-            return plane.atomIndices.some(idx => excludedAtoms.has(Number(idx)));
+            return plane.atomIndices.some(idx => isAtomUnavailable(idx));
         };
 
         const ringAtoms = ring => {
@@ -121,7 +145,7 @@ const Markdown = {
         const isRingInvalid = ring => {
             if (!ring || !ring.atomIndices) return true;
 
-            if (ring.atomIndices.some(idx => excludedAtoms.has(Number(idx)))) {
+            if (ring.atomIndices.some(idx => isAtomUnavailable(idx))) {
                 return true;
             }
 
@@ -247,8 +271,8 @@ const Markdown = {
         if (manualDistances.length > 0) {
             lines.push('## Manual Distances');
             lines.push('');
-            lines.push('| # | Atoms | Distance (Å) |');
-            lines.push('|---|-------|--------------|');
+            lines.push('| # | Atoms | Distance (Å) | Status |');
+            lines.push('|---|-------|--------------|--------|');
 
             const sortedManualDistances = Tables._sortRows(
                 'manualDistances',
@@ -266,7 +290,7 @@ const Markdown = {
                 const d = Chem.distance(selectedAtoms[0], selectedAtoms[1]);
 
                 lines.push(
-                    `| ${i + 1} | ${mdCell(selectedAtoms.map(a => a.label).join('–'))} | ${d.toFixed(4)} |`
+                    `| ${i + 1} | ${mdCell(selectedAtoms.map(a => a.label).join('–'))} | ${d.toFixed(4)} | ${measurementStatus(selectedAtoms)} |`
                 );
             });
 
@@ -306,7 +330,10 @@ const Markdown = {
             lines.push('|------|-------|---------|---------|----------|-------------|');
 
             Object.entries(bondGroups)
-                .sort(([a], [b]) => collator.compare(a, b))
+                .sort(([a], [b]) => Chem.compareGroupTypeKeys(
+                    Chem.groupTypeSortKey(a.split('–')),
+                    Chem.groupTypeSortKey(b.split('–'))
+                ))
                 .forEach(([key, values]) => {
                     const s = Chem.stats(values);
 
@@ -322,8 +349,8 @@ const Markdown = {
         if (manualAngles.length > 0) {
             lines.push('## Manual Angles');
             lines.push('');
-            lines.push('| # | Atoms | Angle (°) |');
-            lines.push('|---|-------|-----------|');
+            lines.push('| # | Atoms | Angle (°) | Status |');
+            lines.push('|---|-------|-----------|--------|');
 
             const sortedManualAngles = Tables._sortRows(
                 'manualAngles',
@@ -345,7 +372,7 @@ const Markdown = {
                 );
 
                 lines.push(
-                    `| ${i + 1} | ${mdCell(selectedAtoms.map(a => a.label).join('–'))} | ${angle.toFixed(3)} |`
+                    `| ${i + 1} | ${mdCell(selectedAtoms.map(a => a.label).join('–'))} | ${angle.toFixed(3)} | ${measurementStatus(selectedAtoms)} |`
                 );
             });
 
@@ -385,7 +412,10 @@ const Markdown = {
             lines.push('|------------|-------|---------|---------|----------|-------------|');
 
             Object.entries(angleGroups)
-                .sort(([a], [b]) => collator.compare(a, b))
+                .sort(([a], [b]) => Chem.compareGroupTypeKeys(
+                    Chem.groupTypeSortKey(a.split('–')),
+                    Chem.groupTypeSortKey(b.split('–'))
+                ))
                 .forEach(([key, values]) => {
                     const s = Chem.stats(values);
 
@@ -401,8 +431,8 @@ const Markdown = {
         if (manualDihedrals.length > 0) {
             lines.push('## Manual Dihedrals');
             lines.push('');
-            lines.push('| # | Atoms | Dihedral (°) |');
-            lines.push('|---|-------|--------------|');
+            lines.push('| # | Atoms | Dihedral (°) | Status |');
+            lines.push('|---|-------|--------------|--------|');
 
             const sortedManualDihedrals = Tables._sortRows(
                 'manualDihedrals',
@@ -420,7 +450,7 @@ const Markdown = {
                 const angle = Chem.calcDihedral(...selectedAtoms);
 
                 lines.push(
-                    `| ${i + 1} | ${mdCell(selectedAtoms.map(a => a.label).join('–'))} | ${angle.toFixed(3)} |`
+                    `| ${i + 1} | ${mdCell(selectedAtoms.map(a => a.label).join('–'))} | ${angle.toFixed(3)} | ${measurementStatus(selectedAtoms)} |`
                 );
             });
 
@@ -441,12 +471,12 @@ const Markdown = {
                 const active = String(plane.id) === String(activePlaneId) ? 'yes' : '';
                 const invalid = isPlaneInvalid(plane);
 
-                const excludedLabels = atomsForPlane
-                    .filter(atom => excludedAtoms.has(atom.index))
-                    .map(atom => atom.label);
+                const unavailable = atomsForPlane
+                    .map(atom => Tables._unavailableInfo(atom, excludedAtoms, activeElements))
+                    .filter(Boolean);
 
                 const status = invalid
-                    ? (excludedLabels.length ? `invalid: excluded ${excludedLabels.join(', ')}` : 'invalid')
+                    ? (unavailable.length ? `invalid: ${unavailable.map(u => `${u.label} (${u.reason})`).join(', ')}` : 'invalid')
                     : 'valid';
 
                 lines.push(
@@ -490,7 +520,8 @@ const Markdown = {
                 const atom = getAtom(m.atomIndex);
 
                 const planeInvalid = plane ? isPlaneInvalid(plane) : true;
-                const atomExcluded = atom ? excludedAtoms.has(atom.index) : true;
+                const atomInfo = atom ? Tables._unavailableInfo(atom, excludedAtoms, activeElements) : null;
+                const atomUnavailable = !atom || atomInfo !== null;
 
                 let status = 'valid';
 
@@ -498,12 +529,12 @@ const Markdown = {
                     status = 'invalid: plane removed';
                 } else if (!atom) {
                     status = 'invalid: atom missing';
-                } else if (planeInvalid && atomExcluded) {
-                    status = 'invalid: plane and atom excluded';
+                } else if (planeInvalid && atomUnavailable) {
+                    status = `invalid: plane and atom ${atomInfo.reason}`;
                 } else if (planeInvalid) {
                     status = 'invalid: plane';
-                } else if (atomExcluded) {
-                    status = 'invalid: atom excluded';
+                } else if (atomUnavailable) {
+                    status = `invalid: atom ${atomInfo.reason}`;
                 }
 
                 lines.push(
@@ -565,17 +596,18 @@ const Markdown = {
                 let status = 'valid';
 
                 if (invalid) {
-                    const excludedLabels = atomsForRing
-                        .filter(atom => excludedAtoms.has(atom.index))
-                        .map(atom => atom.label);
+                    const unavailableLabels = atomsForRing
+                        .map(atom => Tables._unavailableInfo(atom, excludedAtoms, activeElements))
+                        .filter(Boolean)
+                        .map(info => `${info.label} (${info.reason})`);
 
                     const missingBonds = checkRingConnectivity(atomsForRing).missing
                         .map(([a, b]) => `${a}–${b}`);
 
                     const reasons = [];
 
-                    if (excludedLabels.length) {
-                        reasons.push(`excluded ${excludedLabels.join(', ')}`);
+                    if (unavailableLabels.length) {
+                        reasons.push(unavailableLabels.join(', '));
                     }
 
                     if (missingBonds.length) {

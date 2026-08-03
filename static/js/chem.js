@@ -31,6 +31,48 @@ const Chem = {
         return elements.map(el => this.atomicNumber(el)).sort((a, b) => b - a);
     },
 
+    // Everything NOT in this list counts as "metal" for label-ordering
+    // purposes below (alkali/alkaline earth, transition metals, lanthanides,
+    // actinides, and post-transition metals like Al/Ga/In/Sn/Tl/Pb/Bi).
+    _nonMetals: new Set([
+        'H', 'He', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Si', 'P', 'S', 'Cl', 'Ar',
+        'Ge', 'As', 'Se', 'Br', 'Kr', 'Sb', 'Te', 'I', 'Xe', 'At', 'Rn', 'Po',
+    ]),
+
+    isMetal(el) {
+        return !this._nonMetals.has(el);
+    },
+
+    // Which of two elements should be listed first in a bond-type label
+    // (e.g. "Cu-C" not "C-Cu", but "C-O" not "O-C"): metal first (if
+    // either is a metal), otherwise carbon first (organic-chemistry
+    // convention), otherwise heavier element first, otherwise alphabetical.
+    _labelPriority(el) {
+        if (this.isMetal(el)) return 2;
+        if (el === 'C') return 1;
+        return 0;
+    },
+
+    orderBondLabel(elA, elB) {
+        const pA = this._labelPriority(elA);
+        const pB = this._labelPriority(elB);
+
+        if (pA !== pB) return pA > pB ? [elA, elB] : [elB, elA];
+
+        const zA = this.atomicNumber(elA);
+        const zB = this.atomicNumber(elB);
+
+        if (zA !== zB) return zA > zB ? [elA, elB] : [elB, elA];
+
+        return elA <= elB ? [elA, elB] : [elB, elA];
+    },
+
+    // Same convention for angle-type labels, keeping the vertex (elB) in
+    // the middle and only choosing which terminal atom (elA vs elC) leads.
+    orderAngleLabel(elA, elB, elC) {
+        const [first, last] = this.orderBondLabel(elA, elC);
+        return [first, elB, last];
+    },
     compareGroupTypeKeys(keyA, keyB) {
         const len = Math.max(keyA.length, keyB.length);
 

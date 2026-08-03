@@ -170,14 +170,9 @@ const Markdown = {
             );
         };
 
-        const bondType = bond => {
-            const els = [bond.elI, bond.elJ].sort((a, b) => collator.compare(a, b));
-            return els.join('–');
-        };
+        const bondType = bond => Chem.orderBondLabel(bond.elI, bond.elJ).join('–');
 
-        const angleType = angle => {
-            return [angle.elA, angle.elB, angle.elC].join('–');
-        };
+        const angleType = angle => Chem.orderAngleLabel(angle.elA, angle.elB, angle.elC).join('–');
 
         // Export order mirrors whatever is currently sorted/shown in the
         // HTML tables (Tables._sortRows falls back to the given array's

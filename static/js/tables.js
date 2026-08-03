@@ -857,7 +857,7 @@ const Tables = {
         const groups = {};
 
         for (const b of bonds) {
-            const key = [b.elI, b.elJ].sort().join('–');
+            const key = Chem.orderBondLabel(b.elI, b.elJ).join('–');
 
             if (!groups[key]) groups[key] = [];
             groups[key].push(b.dist);
@@ -989,7 +989,7 @@ const Tables = {
         const groups = {};
 
         for (const a of angles) {
-            const key = [a.elA, a.elB, a.elC].join('–');
+            const key = Chem.orderAngleLabel(a.elA, a.elB, a.elC).join('–');
 
             if (!groups[key]) groups[key] = [];
             groups[key].push(a.angle);

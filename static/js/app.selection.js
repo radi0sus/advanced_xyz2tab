@@ -11,6 +11,7 @@ Object.assign(App, {
         bind('btn-selection-undo', () => this._undoSelection());
         bind('btn-selection-clear', () => this._clearSelection());
 
+        bind('btn-save-cshm', () => this.saveSelectedCShM());
         bind('btn-save-distance', () => this.saveSelectedDistance());
         bind('btn-add-bond', () => this.addSelectedBond());
         bind('btn-save-angle', () => this.saveSelectedAngle());
@@ -200,6 +201,16 @@ Object.assign(App, {
         setDisabled('btn-selection-undo', n === 0);
         setDisabled('btn-selection-clear', n === 0);
 
+        // Save CShM only makes sense for a single central atom with a
+        // CN (bonded-neighbor count) of 2-6 — see app.cshm.js.
+        const cshmInfo = (n === 1 && typeof this._getCShMNeighborInfo === 'function')
+            ? this._getCShMNeighborInfo(atoms[0])
+            : null;
+
+        const cshmEligible = !!cshmInfo && cshmInfo.cn >= 2 && cshmInfo.cn <= 6;
+
+        setDisabled('btn-save-cshm', !(n === 1 && cshmEligible));
+
         setDisabled('btn-save-distance', n !== 2);
         setDisabled('btn-add-bond', n !== 2);
 
@@ -272,6 +283,29 @@ Object.assign(App, {
                         </tbody>
                     </table>
                 `;
+            }
+
+            if (typeof this._getCShMNeighborInfo === 'function') {
+                const cshmInfo = this._getCShMNeighborInfo(a);
+
+                if (cshmInfo && cshmInfo.cn >= 2 && cshmInfo.cn <= 6 && typeof CShM !== 'undefined') {
+                    const results = CShM.calcCShM(a, cshmInfo.neighbors);
+                    const ranked = this._rankCShMResults(results);
+                    const volume = (typeof CShM.calcPolyhedralVolume === 'function')
+                        ? CShM.calcPolyhedralVolume(a, cshmInfo.neighbors)
+                        : null;
+
+                    html += this._renderCShMSummaryHtml(ranked, cshmInfo, a, volume);
+                } else if (cshmInfo && cshmInfo.cn > 0) {
+                    html += `
+                        <div style="margin-top:6px">
+                            <div style="color:var(--text-muted)">CShM</div>
+                            <div style="color:var(--text-soft);font-size:12px">
+                                Needs 2–6 bonded neighbors (found ${cshmInfo.cn}) — not eligible.
+                            </div>
+                        </div>
+                    `;
+                }
             }
 
             this._showSelectionOutput(html);

@@ -26,6 +26,9 @@
     --danger: #9e2525;
     --danger-light: #f9e4e4;
 
+    --ok: #2e7d46;
+    --warn: #b5720f;
+
     --viewer-bg: #f6f5f1;
     --viewer-panel-bg: #eceae4;
     --viewer-controls-bg: #e4e1d9;
@@ -83,6 +86,9 @@
 
         --danger: #ff8f8f;
         --danger-light: #421f1f;
+
+        --ok: #6fcf8e;
+        --warn: #e0ab4f;
 
         --viewer-bg: #1a1a1a;
         --viewer-panel-bg: #161616;
@@ -1272,6 +1278,75 @@ th.sortable-th.sorted .sort-indicator {
 /* Ring table action buttons */
 #saved-rings-wrap .data-table .btn-small {
     margin-left: 4px;
+}
+
+/* CShM management table (mirrors the Saved rings table styling above) */
+
+/* Saved CShM: name, central atom and neighbor list */
+#saved-cshm-wrap .data-table td:nth-child(2),
+#saved-cshm-wrap .data-table td:nth-child(3),
+#saved-cshm-wrap .data-table td:nth-child(5) {
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* Saved CShM: closest shape, S, volume and status */
+#saved-cshm-wrap .data-table td:nth-child(6),
+#saved-cshm-wrap .data-table td:nth-child(7),
+#saved-cshm-wrap .data-table td:nth-child(8),
+#saved-cshm-wrap .data-table td:nth-child(9) {
+    font-weight: 650;
+    color: var(--text);
+}
+
+/* CN column */
+#saved-cshm-wrap .data-table th:nth-child(4),
+#saved-cshm-wrap .data-table td:nth-child(4) {
+    text-align: center;
+}
+
+/* Action column */
+#saved-cshm-wrap .data-table th:last-child,
+#saved-cshm-wrap .data-table td:last-child,
+#saved-cshm-details-wrap .data-table th:last-child,
+#saved-cshm-details-wrap .data-table td:last-child {
+    text-align: right;
+}
+
+/* CShM table action buttons */
+#saved-cshm-wrap .data-table .btn-small {
+    margin-left: 4px;
+}
+
+/* CShM details table: shape name and symbol */
+#saved-cshm-details-wrap .data-table td:nth-child(1),
+#saved-cshm-details-wrap .data-table td:nth-child(2) {
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* CShM details table: S value */
+#saved-cshm-details-wrap .data-table td:nth-child(3) {
+    font-weight: 650;
+    color: var(--text);
+    text-align: right;
+}
+
+/* CShM rating colors — green (reliable fit) to red (assignment no longer
+   meaningful). Thresholds follow common CShM literature practice (Alvarez
+   et al.): S < 3 = clearly identifiable shape, S 3-15 = increasing
+   distortion but still informative, S >= 15 = distortion so large that
+   the "closest" label is no longer a meaningful assignment. */
+.cshm-rating-good {
+    color: var(--ok);
+}
+
+.cshm-rating-medium {
+    color: var(--warn);
+}
+
+.cshm-rating-poor {
+    color: var(--danger);
 }
 
 #current-plane-preview .result-box {

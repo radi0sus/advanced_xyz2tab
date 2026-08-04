@@ -1,5 +1,5 @@
 > [!TIP]
-> **advanced_xyz2tab** is available as a static browser-based web app for interactive `.xyz` structure analysis, including 3D molecular visualization, bond and angle tables, saved planes, atom-to-plane distances, plane angles, Cremer-Pople ring puckering analysis, approximate point group symmetry detection, manual measurements, and Markdown/PNG export.  
+> **advanced_xyz2tab** is available as a static browser-based web app for interactive `.xyz` structure analysis, including 3D molecular visualization, bond and angle tables, saved planes, atom-to-plane distances, plane angles, Cremer-Pople ring puckering analysis, Continuous Shape Measures (CShM) with polyhedral volume, approximate point group symmetry detection, manual measurements, and Markdown/PNG export.  
 > 👉 Try it here: https://radi0sus.github.io/advanced_xyz2tab/  
 > 👉 Original CLI tool: https://github.com/radi0sus/xyz2tab
 
@@ -29,6 +29,7 @@ No installation and no Python environment are required for normal use.
   - angles between saved planes
   - Cremer-Pople ring puckering parameters (Q, θ, φ₂) for 5- and 6-membered rings
   - approximate ring conformation classification (chair, boat, twist-boat, envelope, half-chair, twist)
+  - Continuous Shape Measures (CShM) for any bonded coordination sphere (CN 2–6), against the ideal reference polyhedra, plus polyhedral volume
   - approximate molecular point group symmetry, with a tolerance-adjustable, per-element error score
   - manual distances
   - manual angles
@@ -39,6 +40,7 @@ No installation and no Python environment are required for normal use.
 - Element filter for active elements
 - Saved active-plane workflow
 - Saved ring puckering analysis workflow
+- Saved CShM workflow with polyhedral volume
 - Markdown export
 - PNG export of the 3D viewer
 - Light/dark theme via system preference
@@ -260,6 +262,40 @@ Rings with negligible puckering amplitude (`Q` &lt; 0.05 Å) are reported as "Pl
 
 Saved rings are not deleted automatically if an atom is excluded, or if a manual bond that was part of the ring's connectivity is removed again. Instead, they are marked as invalid (with the reason — excluded atom(s) and/or missing bond(s) — shown in the ring table and details), the same way as saved planes.
 
+## Continuous Shape Measures (CShM)
+
+The `CShM` tab computes Continuous Shape Measures for the coordination sphere of any single atom — not just metals — based on:
+
+> M. Pinsky, D. Avnir, *Inorg. Chem.* **1998**, *37*, 5575-5582.  
+> S. Alvarez, P. Alemany, D. Casanova, J. Cirera, M. Llunell, D. Avnir, *Coord. Chem. Rev.* **2005**, *249*, 1693-1708.
+
+The ideal reference polyhedra (coordinates) follow the same set used by `cosymlib` and related CShM tools.
+
+### Basic workflow
+
+1. Select exactly one atom.
+2. All atoms currently bonded to it (automatic + manual bonds, CN 2-6) are used as the coordination sphere — the button is only enabled in that CN range.
+3. A live preview of the CN, the closest-matching reference shape and its S value, and the polyhedral volume is shown while the atom is selected.
+4. Click `Save CShM` (in the selection toolbar, after `Save dist. to active plane`) to store the full ranking against every reference shape for that CN.
+5. Saved results appear in the `CShM` tab, with an expandable per-entry ranking table.
+
+### Reported values
+
+- `S`: the CShM value for each candidate reference shape, lower is a better fit; the lowest value across all candidates for that CN is the assigned "closest shape".
+- `V /Å³`: polyhedral volume — the convex-hull volume of the central atom plus its ligand positions.
+
+### Rating colors
+
+`S` values are colored to give a quick visual read on how reliable the shape assignment is:
+
+- **green** — `S` &lt; 3: clearly identifiable shape, distortion is minor.
+- **orange** — 3 ≤ `S` &lt; 15: noticeably distorted but the closest shape is still informative.
+- **red** — `S` ≥ 15: distortion is large enough that the "closest shape" label is not a reliable assignment on its own (other candidates may fit similarly badly).
+
+These thresholds are a practical convention (not a fixed literature standard) and can be off for unusual coordination spheres — always check the full ranking, not just the top hit.
+
+Saved CShM results are not deleted automatically if an atom is excluded, or if the set of atoms bonded to the central atom changes (tolerance, manual bond, exclusion, ...). Instead, they are marked as invalid (with the reason shown in the table and details), the same way as saved rings and planes.
+
 ## Point group symmetry
 
 The `Symmetry` tab runs an approximate, geometry-only point group detection directly in the browser (no external library, no server round-trip).
@@ -352,6 +388,7 @@ The Markdown export includes, depending on available data:
 - saved plane distances
 - saved plane angles
 - saved rings (Cremer-Pople parameters and per-atom out-of-plane displacements), with the same "invalid: excluded ..." / "invalid: missing bond ..." status as in the app
+- saved CShM results (full shape ranking and polyhedral volume), with the same invalid-status handling
 - point group symmetry (assigned group and defining elements with their error, at the currently selected tolerance) — last, not prominent
 
 Bond and angle summaries are grouped by bond type or angle type and include:
@@ -401,6 +438,28 @@ Signed distances to planes depend on the orientation of the plane normal. The si
 
 Angles between saved planes are acute interplanar angles. They are useful for comparing plane orientations, but they are not always equivalent to signed torsion angles.
 
+## Continuous Shape Measures citation
+
+CShM calculation and the ideal reference polyhedra were adapted from:
+
+> https://github.com/radi0sus/advanced_cshm-cc
+
+If you use CShM values to describe coordination geometries, please cite:
+
+> Mark Pinsky, David Avnir,  
+> "Continuous Symmetry Measures. 5. The Classical Polyhedra",  
+> *Inorganic Chemistry* **1998**, *37*, 5575-5582.  
+> https://doi.org/10.1021/ic9804925
+
+> Santiago Alvarez, Pere Alemany, David Casanova, Jordi Cirera, Miquel Llunell, David Avnir,  
+> "Shape maps and polyhedral interconversion paths in transition metal chemistry",  
+> *Coordination Chemistry Reviews* **2005**, *249*, 1693-1708.  
+> https://doi.org/10.1016/j.ccr.2005.03.031
+
+The ideal reference structures follow the same coordinates used by `cosymlib`:
+
+> https://github.com/GrupEstructuraElectronicaSimetria/cosymlib/blob/master/cosymlib/shape/ideal_structures_center.yaml
+
 ## 3Dmol.js citation
 
 This application uses [3Dmol.js](https://3dmol.csb.pitt.edu/) for molecular visualization.
@@ -428,5 +487,8 @@ See `LICENSE` for details.
 - Plane tables are currently not sortable.
 - Ring puckering conformation classification is an approximate, band-based assignment to the general conformation family, not an exact match to canonical IUPAC reference forms.
 - Point group symmetry detection is approximate and geometry-only; icosahedral (I/Ih) is not covered, and the cubic groups (T/Th/O/Td/Oh) are best-effort (see "Point group symmetry" above).
+- CShM is currently implemented for CN 2-6 only; the `Save CShM` button is disabled outside that range.
+- Polyhedral volume (`V /Å³`) uses a small browser-side convex-hull routine and may differ from SciPy/Qhull in degenerate or near-planar cases.
+- CShM rating colors (green/orange/red) use a practical threshold convention, not a fixed literature standard.
 - CSV and JSON export are not yet implemented.
 - Analysis state is currently stored only during the active browser session.

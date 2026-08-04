@@ -98,6 +98,7 @@
                         <button id="btn-save-dihedral" class="btn-small" disabled>Save dihedral</button>
                         <button id="btn-save-current-plane" class="btn-small" disabled>Save current plane</button>
                         <button id="btn-save-plane-distance" class="btn-small" disabled>Save dist. to active plane</button>
+                        <button id="btn-save-cshm" class="btn-small" disabled title="Select a single atom with 2-6 bonded neighbors">Save CShM</button>
                     </div>
 
                     <div id="selection-output" class="hidden"></div>
@@ -156,6 +157,7 @@
                 <button class="tab" data-tab="plane">Planes</button>
                 <button class="tab" data-tab="ring">Rings</button>
                 <button class="tab" data-tab="dihedral">Dihedral</button>
+                <button class="tab" data-tab="cshm">CShM</button>
                 <button class="tab" data-tab="symmetry">Symmetry</button>
                 <button class="tab" data-tab="info">Info</button>
             </div>
@@ -220,7 +222,7 @@
                 <div id="saved-ring-details-wrap"></div>
 
             </div>
-            
+
             <!-- Tab: Dihedral -->
             <div id="tab-dihedral" class="tab-content">
             
@@ -229,6 +231,27 @@
                 </div>
             
                 <div id="manual-dihedrals-wrap"></div>
+            </div>
+
+            <!-- Tab: CShM -->
+            <div id="tab-cshm" class="tab-content">
+
+                <div class="result-box" style="margin-bottom:10px">
+                    Select a single atom, then use <b>Save CShM</b> in the
+                    selection toolbar. All atoms currently bonded to it
+                    (CN 2–6) are used as the coordination sphere — any
+                    element can be a central atom, not just metals. The
+                    result is compared against the ideal reference
+                    polyhedra for that CN and the best (lowest S) match is
+                    highlighted; the polyhedral volume (convex hull of
+                    central atom + neighbors) is reported alongside it,
+                    and the full ranking is saved here.
+                </div>
+
+                <div id="saved-cshm-wrap"></div>
+
+                <div id="saved-cshm-details-wrap"></div>
+
             </div>
 
             <!-- Tab: Symmetry -->
@@ -270,6 +293,7 @@
 <script src="static/js/parser.js"></script>
 <script src="static/js/format.js"></script>
 <script src="static/js/chem.js"></script>
+<script src="static/js/cshm.js"></script>
 <script src="static/js/symmetry.js"></script>
 <script src="static/js/tables.js"></script>
 <script src="static/js/markdown.js"></script>
@@ -281,6 +305,7 @@
 <script src="static/js/app.measurements.js"></script>
 <script src="static/js/app.geometry.js"></script>
 <script src="static/js/app.ring.js"></script>
+<script src="static/js/app.cshm.js"></script>
 <script src="static/js/app.symmetry.js"></script>
 <script src="static/js/app.export.js"></script>
 <script src="static/js/main.js"></script>

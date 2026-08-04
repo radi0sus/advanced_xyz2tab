@@ -20,6 +20,8 @@ const Markdown = {
 
             savedRings = [],
 
+            savedCShM = [],
+
             symmetryResult = null,
             symmetryRaw = null,
             symmetryTolerance = null,
@@ -150,6 +152,36 @@ const Markdown = {
             }
 
             return !checkRingConnectivity(ringAtoms(ring)).ok;
+        };
+
+        // Neighbor lookup for saved CShM entries — same "bonded neighbors,
+        // respecting exclusion and the active-element filter" logic as
+        // App._getCShMNeighborInfo (uses `bonds`, i.e. filteredBonds, not
+        // the unfiltered `allBonds`), but self-contained here since the
+        // exporter doesn't call back into App.
+        const cshmNeighborIndices = centralIdx => {
+            const idx = Number(centralIdx);
+            const neighborIdx = new Set();
+
+            bonds.forEach(bond => {
+                if (Number(bond.i) === idx) neighborIdx.add(Number(bond.j));
+                else if (Number(bond.j) === idx) neighborIdx.add(Number(bond.i));
+            });
+
+            return [...neighborIdx].sort((a, b) => a - b);
+        };
+
+        const isCShMInvalid = entry => {
+            if (!entry) return true;
+
+            if (isAtomUnavailable(entry.centralAtomIndex)) return true;
+            if (entry.ligandIndices.some(idx => isAtomUnavailable(idx))) return true;
+            if (!getAtom(entry.centralAtomIndex)) return true;
+
+            const currentKey = cshmNeighborIndices(entry.centralAtomIndex).join(',');
+            const savedKey = entry.ligandIndices.slice().sort((a, b) => a - b).join(',');
+
+            return currentKey !== savedKey;
         };
 
         const ringConformationLabel = result => {
@@ -642,6 +674,71 @@ const Markdown = {
                 atomsForRing.forEach((atom, idx) => {
                     const z = result.zDisplacements[idx];
                     lines.push(`| ${mdCell(atom.label)} | ${z !== undefined ? z.toFixed(4) : '—'} |`);
+                });
+
+                lines.push('');
+            }
+        }
+
+        // --- Saved CShM (Continuous Shape Measures) ---
+        if (savedCShM.length > 0) {
+            lines.push('## Continuous Shape Measures (CShM)');
+            lines.push('');
+
+            lines.push('| # | Name | Central atom | CN | Neighbors | Closest shape | S | V /Å³ | Status |');
+            lines.push('|---|------|---------------|----|-----------|----------------|---|-------|--------|');
+
+            savedCShM.forEach((entry, i) => {
+                const central = getAtom(entry.centralAtomIndex);
+                const neighbors = entry.ligandIndices.map(idx => getAtom(idx)).filter(Boolean);
+                const invalid = isCShMInvalid(entry);
+                const best = entry.ranked[0];
+
+                let status = 'valid';
+
+                if (invalid) {
+                    const allIdx = [entry.centralAtomIndex, ...entry.ligandIndices];
+
+                    const unavailableLabels = allIdx
+                        .map(idx => {
+                            const atom = getAtom(idx);
+                            return atom ? Tables._unavailableInfo(atom, excludedAtoms, activeElements) : null;
+                        })
+                        .filter(Boolean)
+                        .map(info => `${info.label} (${info.reason})`);
+
+                    const currentKey = cshmNeighborIndices(entry.centralAtomIndex).join(',');
+                    const savedKey = entry.ligandIndices.slice().sort((a, b) => a - b).join(',');
+                    const connectivityChanged = currentKey !== savedKey;
+
+                    const reasons = [];
+
+                    if (unavailableLabels.length) {
+                        reasons.push(unavailableLabels.join(', '));
+                    }
+
+                    if (connectivityChanged) {
+                        reasons.push('bonded neighbors changed');
+                    }
+
+                    status = reasons.length ? `invalid: ${reasons.join('; ')}` : 'invalid';
+                }
+
+                lines.push(
+                    `| ${i + 1} | ${mdCell(entry.name)} | ${mdCell(central ? central.label : '(removed)')} | ${entry.cn} | ${mdCell(neighbors.map(a => a.label).join(', '))} | ${mdCell(`${best.name} (${best.label})`)} | ${best.cshm.toFixed(3)} | ${Number.isFinite(entry.volume) ? entry.volume.toFixed(4) : '—'} | ${mdCell(status)} |`
+                );
+            });
+
+            lines.push('');
+
+            for (const entry of savedCShM) {
+                lines.push(`### ${mdCell(entry.name)} — full shape ranking`);
+                lines.push('');
+                lines.push('| Shape | Symbol | S (CShM) |');
+                lines.push('|-------|--------|----------|');
+
+                entry.ranked.forEach((r, idx) => {
+                    lines.push(`| ${mdCell(r.name)}${idx === 0 ? ' (closest)' : ''} | ${mdCell(r.label)} | ${r.cshm.toFixed(3)} |`);
                 });
 
                 lines.push('');

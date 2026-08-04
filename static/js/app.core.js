@@ -41,6 +41,12 @@ const App = {
     _nextRingId: 1,
     _selectedRingRow: null,
 
+    // Saved-CShM system (Continuous Shape Measures)
+    savedCShM: [],
+    activeCShMDetailsId: null,
+    _nextCShMId: 1,
+    _selectedCShMRow: null,
+
     // Dihedral results are stored in manualDihedrals (see app.measurements.js);
     // there is no separate "current" single-result state anymore.
 
@@ -337,6 +343,11 @@ const App = {
         this.activeRingDetailsId = null;
         this._nextRingId = 1;
 
+        // Reset saved-CShM state
+        this.savedCShM = [];
+        this.activeCShMDetailsId = null;
+        this._nextCShMId = 1;
+
         // Clear old viewer planes if a previous file had planes
         Viewer.clearPlane(1);
         Viewer.clearPlane(2);
@@ -350,6 +361,8 @@ const App = {
             'saved-plane-angles-wrap',
             'saved-rings-wrap',
             'saved-ring-details-wrap',
+            'saved-cshm-wrap',
+            'saved-cshm-details-wrap',
         ];
 
         clearIds.forEach(id => {
@@ -366,6 +379,10 @@ const App = {
 
         if (typeof this._renderRingAnalysis === 'function') {
             this._renderRingAnalysis();
+        }
+
+        if (typeof this._renderCShMAnalysis === 'function') {
+            this._renderCShMAnalysis();
         }
 
         // Initial bond & angle calculation

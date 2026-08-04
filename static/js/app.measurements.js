@@ -66,6 +66,10 @@ Object.assign(App, {
             this._renderRingAnalysis();
         }
 
+        if (typeof this._renderCShMAnalysis === 'function') {
+            this._renderCShMAnalysis();
+        }
+
         this._showSelectionOutput(`
             <div class="selection-output-title">Manual bond</div>
             <div>
@@ -149,6 +153,10 @@ Object.assign(App, {
 
         if (typeof this._renderRingAnalysis === 'function') {
             this._renderRingAnalysis();
+        }
+
+        if (typeof this._renderCShMAnalysis === 'function') {
+            this._renderCShMAnalysis();
         }
 
         const a = this.parsed.atoms[i];

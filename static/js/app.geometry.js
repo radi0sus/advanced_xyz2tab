@@ -755,6 +755,10 @@ Object.assign(App, {
             this._renderRingAnalysis();
         }
 
+        if (typeof this._renderCShMAnalysis === 'function') {
+            this._renderCShMAnalysis();
+        }
+
         this._renderSelectionToolbar();
     },
 });

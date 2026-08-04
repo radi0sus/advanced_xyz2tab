@@ -23,6 +23,8 @@ Object.assign(App, {
 
             savedRings: this.savedRings,
 
+            savedCShM: this.savedCShM,
+
             symmetryResult: this.symmetryRaw ? Symmetry.classify(this.symmetryRaw, this.symmetryTolerance) : null,
             symmetryRaw: this.symmetryRaw,
             symmetryTolerance: this.symmetryTolerance,

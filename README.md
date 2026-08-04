@@ -29,7 +29,7 @@ No installation and no Python environment are required for normal use.
   - angles between saved planes
   - Cremer-Pople ring puckering parameters (Q, θ, φ₂) for 5- and 6-membered rings
   - approximate ring conformation classification (chair, boat, twist-boat, envelope, half-chair, twist)
-  - Continuous Shape Measures (CShM) for any bonded coordination sphere (CN 2–6), against the ideal reference polyhedra, plus polyhedral volume
+  - Continuous Shape Measures (CShM) for any bonded coordination sphere (CN 2–6), against the ideal reference polyhedra, plus polyhedral volume and τ₄/τ₄′/τ₅ geometry indices (CN 4/5)
   - approximate molecular point group symmetry, with a tolerance-adjustable, per-element error score
   - manual distances
   - manual angles
@@ -275,7 +275,7 @@ The ideal reference polyhedra (coordinates) follow the same set used by `cosymli
 
 1. Select exactly one atom.
 2. All atoms currently bonded to it (automatic + manual bonds, CN 2-6) are used as the coordination sphere — the button is only enabled in that CN range.
-3. A live preview of the CN, the closest-matching reference shape and its S value, and the polyhedral volume is shown while the atom is selected.
+3. A live preview of the CN, the closest-matching reference shape and its S value, and the polyhedral volume is shown while the atom is selected. For CN 4 or 5, the τ geometry indices (see below) are shown as well.
 4. Click `Save CShM` (in the selection toolbar, after `Save dist. to active plane`) to store the full ranking against every reference shape for that CN.
 5. Saved results appear in the `CShM` tab, with an expandable per-entry ranking table.
 
@@ -283,6 +283,13 @@ The ideal reference polyhedra (coordinates) follow the same set used by `cosymli
 
 - `S`: the CShM value for each candidate reference shape, lower is a better fit; the lowest value across all candidates for that CN is the assigned "closest shape".
 - `V /Å³`: polyhedral volume — the convex-hull volume of the central atom plus its ligand positions.
+- τ₄, τ₄′ (CN 4 only), τ₅ (CN 5 only): geometry indices based on the two largest L-M-L angles at the central atom, based on:
+
+  > L. Yang, D. R. Powell, R. P. Houser, *Dalton Trans.* **2007**, 955-964. (τ₄)  
+  > A. Okuniewski, D. Rosiak, J. Chojnacki, B. Becker, *Polyhedron* **2015**, *90*, 47-57. (τ₄′)  
+  > A. W. Addison, T. N. Rao, J. Reedijk, J. van Rijn, G. C. Verschoor, *J. Chem. Soc., Dalton Trans.* **1984**, 1349-1356. (τ₅)
+
+  τ₄ and τ₄′ range from 0 (square planar) to 1 (tetrahedral); τ₅ ranges from 0 (square pyramidal) to 1 (trigonal bipyramidal). They are not shown for any other CN and are not part of the saved-results overview table (kept in the live preview and the per-entry details instead, to avoid a table column that would be empty for most CNs).
 
 ### Rating colors
 
@@ -460,6 +467,23 @@ The ideal reference structures follow the same coordinates used by `cosymlib`:
 
 > https://github.com/GrupEstructuraElectronicaSimetria/cosymlib/blob/master/cosymlib/shape/ideal_structures_center.yaml
 
+If you use the τ₄, τ₄′ or τ₅ geometry indices, please cite:
+
+> Lei Yang, Douglas R. Powell, Robert P. Houser,  
+> "Structural variation in copper(i) complexes with pyridylmethylamide ligands: structural analysis with a new four-coordinate geometry index, τ₄",  
+> *Dalton Transactions* **2007**, 955-964.  
+> https://doi.org/10.1039/B617136B
+
+> Andrzej Okuniewski, Damian Rosiak, Jarosław Chojnacki, Barbara Becker,  
+> "Coordination polymers and molecular structures among complexes of mercury(II) halides with selected 1-benzoylthioureas",  
+> *Polyhedron* **2015**, *90*, 47-57.  
+> https://doi.org/10.1016/j.poly.2015.01.035
+
+> Anthony W. Addison, T. Nageswara Rao, Jan Reedijk, Jacobus van Rijn, Gerrit C. Verschoor,  
+> "Synthesis, structure, and spectroscopic properties of copper(II) compounds containing nitrogen-sulphur donor ligands; the crystal and molecular structure of aqua[1,7-bis(N-methylbenzimidazol-2′-yl)-2,6-dithiaheptane]copper(II) perchlorate",  
+> *Journal of the Chemical Society, Dalton Transactions* **1984**, 1349-1356.  
+> https://doi.org/10.1039/DT9840001349
+
 ## 3Dmol.js citation
 
 This application uses [3Dmol.js](https://3dmol.csb.pitt.edu/) for molecular visualization.
@@ -488,6 +512,7 @@ See `LICENSE` for details.
 - Ring puckering conformation classification is an approximate, band-based assignment to the general conformation family, not an exact match to canonical IUPAC reference forms.
 - Point group symmetry detection is approximate and geometry-only; icosahedral (I/Ih) is not covered, and the cubic groups (T/Th/O/Td/Oh) are best-effort (see "Point group symmetry" above).
 - CShM is currently implemented for CN 2-6 only; the `Save CShM` button is disabled outside that range.
+- τ₄, τ₄′ and τ₅ are only computed (and shown) for CN 4 and CN 5, respectively; they are not part of the saved-results overview table, only the live preview and per-entry details.
 - Polyhedral volume (`V /Å³`) uses a small browser-side convex-hull routine and may differ from SciPy/Qhull in degenerate or near-planar cases.
 - CShM rating colors (green/orange/red) use a practical threshold convention, not a fixed literature standard.
 - CSV and JSON export are not yet implemented.

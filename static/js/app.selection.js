@@ -294,8 +294,11 @@ Object.assign(App, {
                     const volume = (typeof CShM.calcPolyhedralVolume === 'function')
                         ? CShM.calcPolyhedralVolume(a, cshmInfo.neighbors)
                         : null;
+                    const tau = (typeof CShM.calcTauIndices === 'function')
+                        ? CShM.calcTauIndices(a, cshmInfo.neighbors)
+                        : null;
 
-                    html += this._renderCShMSummaryHtml(ranked, cshmInfo, a, volume);
+                    html += this._renderCShMSummaryHtml(ranked, cshmInfo, a, volume, tau);
                 } else if (cshmInfo && cshmInfo.cn > 0) {
                     html += `
                         <div style="margin-top:6px">

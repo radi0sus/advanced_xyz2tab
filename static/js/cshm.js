@@ -1003,11 +1003,83 @@ const CShM = (function () {
     return c;
   }
 
+  // ── Tau geometry indices (CN 4-5 only) ────────────────────────────────────────
+  //
+  // Ported from https://github.com/radi0sus/advanced_cshm-cc
+  // (static/js/geometry.js). Pure angle geometry — the two largest L-M-L
+  // angles alpha (2nd largest) and beta (largest) among all C(CN,2) angles
+  // at the central atom, no permutation search needed:
+  //
+  //   tau4  = (360 - (alpha + beta)) / (360 - 2*109.5)     [CN 4]
+  //   tau4' = (beta - alpha)/(360 - 109.5) + (180 - beta)/(180 - 109.5)  [CN 4]
+  //   tau5  = (beta - alpha) / 60                          [CN 5]
+  //
+  // Returns null for anything other than CN 4 or 5.
+
+  function calcTauIndices(centralAtom, ligands) {
+    const cn = ligands.length;
+    if (cn !== 4 && cn !== 5) return null;
+
+    const angles = [];
+
+    for (let i = 0; i < ligands.length; i++) {
+      for (let j = i + 1; j < ligands.length; j++) {
+        angles.push(tauAngle3(centralAtom, ligands[i], ligands[j]));
+      }
+    }
+
+    const sorted = [...angles].sort((a, b) => b - a);
+    if (sorted.length < 2) return null;
+
+    const beta = sorted[0];
+    const alpha = sorted[1];
+
+    if (cn === 4 && angles.length === 6) {
+      return {
+        tau4: (360.0 - (alpha + beta)) / (360.0 - 2.0 * 109.5),
+        tau4Prime:
+          (beta - alpha) / (360.0 - 109.5) +
+          (180.0 - beta) / (180.0 - 109.5),
+      };
+    }
+
+    if (cn === 5 && angles.length === 10) {
+      return {
+        tau5: (beta - alpha) / 60.0,
+      };
+    }
+
+    return null;
+  }
+
+  function tauAngle3(center, a, b) {
+    const va = [
+      Number(a.x) - Number(center.x),
+      Number(a.y) - Number(center.y),
+      Number(a.z) - Number(center.z),
+    ];
+
+    const vb = [
+      Number(b.x) - Number(center.x),
+      Number(b.y) - Number(center.y),
+      Number(b.z) - Number(center.z),
+    ];
+
+    const na = Math.sqrt(dot3(va, va));
+    const nb = Math.sqrt(dot3(vb, vb));
+
+    if (na < 1e-14 || nb < 1e-14) return 0;
+
+    const cos = dot3(va, vb) / (na * nb);
+    return Math.acos(Math.max(-1, Math.min(1, cos))) * 180.0 / Math.PI;
+  }
+
   // ── exposed API ─────────────────────────────────────────────────────────────
 
   return {
     IDEAL_SHAPES,
     calcCShM,
     calcPolyhedralVolume,
+    calcTauIndices,
   };
 })();

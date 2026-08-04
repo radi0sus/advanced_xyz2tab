@@ -732,7 +732,23 @@ const Markdown = {
             lines.push('');
 
             for (const entry of savedCShM) {
-                lines.push(`### ${mdCell(entry.name)} — full shape ranking`);
+                lines.push(`### ${mdCell(entry.name)}`);
+                lines.push('');
+
+                if (entry.tau) {
+                    lines.push('#### Geometry indices');
+                    lines.push('');
+
+                    if (Number.isFinite(entry.tau.tau4)) {
+                        lines.push(`τ₄ = ${entry.tau.tau4.toFixed(2)}, τ₄' = ${entry.tau.tau4Prime.toFixed(2)}`);
+                    } else if (Number.isFinite(entry.tau.tau5)) {
+                        lines.push(`τ₅ = ${entry.tau.tau5.toFixed(2)}`);
+                    }
+
+                    lines.push('');
+                }
+
+                lines.push('#### Full shape ranking');
                 lines.push('');
                 lines.push('| Shape | Symbol | S (CShM) |');
                 lines.push('|-------|--------|----------|');

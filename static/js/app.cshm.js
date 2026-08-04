@@ -136,6 +136,10 @@ Object.assign(App, {
             ? CShM.calcPolyhedralVolume(central, info.neighbors)
             : null;
 
+        const tau = (typeof CShM.calcTauIndices === 'function')
+            ? CShM.calcTauIndices(central, info.neighbors)
+            : null;
+
         const number = this._nextCShMId;
         this._nextCShMId += 1;
 
@@ -147,13 +151,14 @@ Object.assign(App, {
             cn: info.cn,
             ranked,
             volume,
+            tau,
         };
 
         this.savedCShM.push(entry);
 
         this._renderCShMAnalysis();
 
-        this._showSelectionOutput(this._renderCShMSummaryHtml(ranked, info, central, volume));
+        this._showSelectionOutput(this._renderCShMSummaryHtml(ranked, info, central, volume, tau));
 
         this._finishSelectionAction();
 
@@ -180,9 +185,33 @@ Object.assign(App, {
         this._renderCShMAnalysis();
     },
 
+    _renderTauHtml(tau) {
+        if (!tau) return '';
+
+        if (Number.isFinite(tau.tau4)) {
+            return `
+                <div style="margin-top:2px">
+                    τ₄ = <span class="result-value">${tau.tau4.toFixed(2)}</span>
+                    &nbsp;&nbsp;
+                    τ₄' = <span class="result-value">${tau.tau4Prime.toFixed(2)}</span>
+                </div>
+            `;
+        }
+
+        if (Number.isFinite(tau.tau5)) {
+            return `
+                <div style="margin-top:2px">
+                    τ₅ = <span class="result-value">${tau.tau5.toFixed(2)}</span>
+                </div>
+            `;
+        }
+
+        return '';
+    },
+
     // Small HTML summary used both for the live single-atom selection
     // preview and the output shown right after "Save CShM".
-    _renderCShMSummaryHtml(ranked, info, atom, volume) {
+    _renderCShMSummaryHtml(ranked, info, atom, volume, tau) {
         if (!ranked || !ranked.length) return '';
 
         const best = ranked[0];
@@ -193,6 +222,7 @@ Object.assign(App, {
             <div style="margin-bottom:3px;color:var(--text-muted)">
                 CN = ${info.cn} (${neighborLabels})
             </div>
+            ${this._renderTauHtml(tau)}
             <div>
                 Closest shape:
                 <span class="result-value">${best.name} (${best.label})</span>
@@ -403,6 +433,7 @@ Object.assign(App, {
                 <div style="margin-top:4px;color:var(--text-muted)">
                     CN = ${entry.cn}: ${neighbors.map(a => a.label).join(', ')}
                 </div>
+                ${this._renderTauHtml(entry.tau)}
                 <div style="margin-top:4px;color:var(--text-muted)">
                     Closest shape: <b>${best.name} (${best.label})</b>, S = <span class="${this._cshmRatingClass(best.cshm)}">${best.cshm.toFixed(3)}</span>
                 </div>

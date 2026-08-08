@@ -247,8 +247,8 @@ const Markdown = {
         if (typeof Dosy !== 'undefined' && atoms.length >= 2) {
             const est = Dosy.calcEstimate(atoms);
             lines.push(`**Van der Waals volume:** ${est.volume.toFixed(1)} Å³ (voxel grid, Alvarez 2013 radii, ${est.gridSpacing.toFixed(3)} Å spacing)  `);
-            lines.push(`**r_H (uncorrected):** ${est.r0.toFixed(2)} Å (equivalent-sphere radius, Stokes-Einstein)  `);
-            lines.push(`**r_H (Perrin-corrected):** ${est.rHCorrected.toFixed(2)} Å (${est.shape}, p = ${est.p.toFixed(2)}, F = ${est.F.toFixed(3)})`);
+            lines.push(`**r_eq (uncorrected):** ${est.r0.toFixed(2)} Å (vdW-volume-equivalent sphere radius — a geometric proxy, not the empirical hydrodynamic radius)  `);
+            lines.push(`**r_eq (Perrin-corrected):** ${est.rEqCorrected.toFixed(2)} Å (${est.shape}, p = ${est.p.toFixed(2)}, F = ${est.F.toFixed(3)})`);
         }
 
         lines.push('');

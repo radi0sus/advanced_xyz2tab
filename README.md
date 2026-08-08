@@ -34,7 +34,7 @@ No installation and no Python environment are required for normal use.
   - manual distances
   - manual angles
   - manual dihedrals
-  - DOSY-related size estimates: van der Waals volume, uncorrected and Perrin shape-corrected hydrodynamic radius
+  - DOSY-related size estimates: van der Waals volume, uncorrected and Perrin shape-corrected equivalent-sphere radius (r_eq — a geometric proxy, not the empirical hydrodynamic radius)
 - Adjustable covalent-radius tolerance for automatic bond detection
 - Manual graph-active bonds
 - Atom-wise exclusion from analysis
@@ -335,14 +335,23 @@ Rather than a strict yes/no test, every candidate symmetry element (rotation axi
 The `Molecular information` panel additionally shows three size estimates relevant for DOSY (diffusion-ordered NMR spectroscopy), computed from every atom of the currently loaded structure (exclusions are not applied here):
 
 - **Van der Waals volume** — the volume of the union of atomic van der Waals spheres, computed on a voxel grid (default spacing 0.2 Å, automatically coarsened for very large/spread-out structures to keep memory bounded). Atomic radii are taken from Alvarez (2013), the same default radii set used by [MoloVol](https://molovol.com), so values should be directly comparable to a MoloVol calculation at a matching grid resolution.
-- **r<sub>H</sub> (uncorrected)** — the radius of a sphere with the same volume as the van der Waals volume, `r0 = (3V/4π)^(1/3)`, used directly as the hydrodynamic radius in the Stokes–Einstein equation. This is the classical, shape-blind estimate.
-- **r<sub>H</sub> (Perrin-corrected)** — `r0` scaled by the Perrin translational friction factor `F(p) = f/f0`, the ratio of the actual friction of a spheroid to that of a sphere of equal volume, as a function of the aspect ratio `p` alone. The aspect ratio is obtained from the geometric gyration tensor of the atom positions (each atom additionally contributing its own van der Waals radius isotropically, so that exactly planar structures don't produce a degenerate, infinitely thin equivalent ellipsoid), classified as prolate or oblate from which pair of eigenvalues is closer together. `F(p)` is computed from the exact Kim & Karrila resistance functions for prolate/oblate spheroids, orientation-averaged as `D = (D∥ + 2D⊥)/3` — the isotropic average relevant for a molecule tumbling freely in solution.
+- **r<sub>eq</sub> (uncorrected)** — the radius of a sphere with the same volume as the van der Waals volume, `r0 = (3V/4π)^(1/3)`. This is a purely geometric quantity, deliberately *not* called "r_H" or "hydrodynamic radius": it is not calibrated against, or derived from, any diffusion measurement — it only says how big the bare, solvent-free molecule is.
+- **r<sub>eq</sub> (Perrin-corrected)** — `r0` scaled by the Perrin translational friction factor `F(p) = f/f0`, the ratio of the actual friction of a spheroid to that of a sphere of equal volume, as a function of the aspect ratio `p` alone. The aspect ratio is obtained from the geometric gyration tensor of the atom positions (each atom additionally contributing its own van der Waals radius isotropically, so that exactly planar structures don't produce a degenerate, infinitely thin equivalent ellipsoid), classified as prolate or oblate from which pair of eigenvalues is closer together. `F(p)` is computed from the exact Kim & Karrila resistance functions for prolate/oblate spheroids, orientation-averaged as `D = (D∥ + 2D⊥)/3` — the isotropic average relevant for a molecule tumbling freely in solution. This corrects for shape only, not for the gap described below.
+
+### Why this isn't called "hydrodynamic radius"
+
+The hydrodynamic radius, properly speaking, is an *empirical* quantity: whatever radius makes a measured diffusion coefficient `D` fit the Stokes–Einstein equation for a given solvent and temperature. `r_eq` here is the reverse — a purely geometric radius computed from the structure alone, with no reference to any measured `D`. The two are not interchangeable, and for small, compact solutes the gap can be large. Two checks against literature data, both in solvents of comparable molecular size to the solute (where the continuum, stick-boundary assumption behind Stokes–Einstein is weakest):
+
+- **Cyclopentane in THF-d8:** experimental D ≈ 2.27×10⁻⁹ m²/s (Urbank/Vondung, see below) implies r_H ≈ 1.6 Å via Stokes–Einstein (η(THF) ≈ 0.48 mPa·s, 298 K); this tool's r_eq for cyclopentane is 2.76–2.79 Å — roughly 1.7× too large.
+- **Benzene self-diffusion:** literature D ≈ 2.15–2.27×10⁻⁹ m²/s at 25 °C implies r_H ≈ 1.6–1.7 Å (η(benzene) ≈ 0.604 mPa·s); this tool's r_eq for benzene is 2.76 Å (uncorrected) / 2.93 Å (Perrin-corrected) — again roughly 1.6–1.8× too large.
+
+This is expected, not a bug: Stokes–Einstein with a stick boundary condition systematically underestimates `D` (equivalently, overestimates `r_H`) once the solute is comparable in size to, or smaller than, the solvent molecules — the continuum approximation the whole derivation rests on simply doesn't hold at that scale. The Perrin shape correction only adjusts for anisotropy relative to a sphere of the same volume; it does not, and cannot, close this gap, since the gap isn't a shape effect. Treat `r_eq` as a rough, solvent-independent size proxy for comparing structures to each other, not as a stand-in for a real DOSY-derived hydrodynamic radius.
 
 ### What this deliberately does not include
 
 - **No probe-excluded void volume.** MoloVol's "molecular volume" (van der Waals volume + void volume inaccessible to a probe sphere, roughly analogous to the Connolly surface) requires a probe radius, which is itself a solvent-size parameter. Since the translational diffusion coefficient `D` from Stokes–Einstein needs the solvent viscosity anyway (also solvent-specific), and that isn't hard-coded here either, the van der Waals volume was kept as the parameter-free default rather than reintroducing a solvent-size choice through a different door.
-- **No explicit solvation shell.** The estimates describe the bare solute; comparison to experimental DOSY-derived hydrodynamic radii should account for the fact that a real diffusing species typically carries at least a partial solvation shell, which is not modeled here.
-- **No diffusion coefficient `D`.** Computing `D` itself from `r_H` via Stokes–Einstein is a one-line calculation the user can do with their own choice of temperature and solvent viscosity; no solvent database is bundled.
+- **No explicit solvation shell.** The estimates describe the bare solute; as shown above, this is only part of why `r_eq` differs from an experimental hydrodynamic radius.
+- **No diffusion coefficient `D`.** Computing `D` itself from a radius via Stokes–Einstein is a one-line calculation the user can do with their own choice of temperature and solvent viscosity; no solvent database is bundled.
 
 ### Citations
 
@@ -353,7 +362,7 @@ If you use the van der Waals volume, please cite the radii source:
 > *Dalton Transactions* **2013**, *42*, 8617–8636.  
 > https://doi.org/10.1039/C3DT50599E
 
-If you use the Perrin-corrected hydrodynamic radius, please cite:
+If you use the Perrin-corrected r<sub>eq</sub>, please cite:
 
 > Francis Perrin,  
 > "Mouvement brownien d'un ellipsoide (I). Dispersion diélectrique pour des molécules ellipsoidales",  
@@ -369,7 +378,7 @@ If you use the Perrin-corrected hydrodynamic radius, please cite:
 > *Microhydrodynamics: Principles and Selected Applications*,  
 > Butterworth-Heinemann, Boston, **1991**. (Table 3.4/3.6, translational resistance functions for prolate/oblate spheroids — the closed-form expressions this implementation's `F(p)` is derived from.)
 
-Background on why a naive Stokes–Einstein `r_H` from molecular size can be a poor proxy for the DOSY-measured value, and on shape/solvation effects more broadly:
+Background on why a naive Stokes–Einstein hydrodynamic radius from molecular size can be a poor proxy for the DOSY-measured value, and on shape/solvation effects more broadly:
 
 > Julia Urbank, Iris Vondung, et al.,  
 > "Accurate Molecular Size Determination by Diffusion Ordered NMR Spectroscopy Based on an Improved Diffusion Model",  
@@ -430,7 +439,7 @@ The viewer reflects:
 The Markdown export includes, depending on available data:
 
 - molecular information
-- DOSY size estimates (van der Waals volume, uncorrected and Perrin-corrected r_H)
+- DOSY size estimates (van der Waals volume, uncorrected and Perrin-corrected r_eq)
 - settings
 - manual distances
 - bond lengths
@@ -565,5 +574,5 @@ See `LICENSE` for details.
 - CShM rating colors (green/orange/red) use a practical threshold convention, not a fixed literature standard.
 - CSV and JSON export are not yet implemented.
 - Analysis state is currently stored only during the active browser session.
-- DOSY size estimates use the van der Waals volume only, not MoloVol's probe-dependent "molecular volume" (void-filled); no solvation shell is modeled and no diffusion coefficient is calculated (see "DOSY size estimates" above for the reasoning).
+- DOSY size estimates use the van der Waals volume only, not MoloVol's probe-dependent "molecular volume" (void-filled); no solvation shell is modeled and no diffusion coefficient is calculated (see "DOSY size estimates" above for the reasoning). The resulting r_eq is a geometric proxy, not the empirical hydrodynamic radius — it runs roughly 1.5–2x too large against real DOSY data for small solutes in comparably-sized solvents (checked against cyclopentane/THF-d8 and benzene self-diffusion literature values), because it doesn't capture the breakdown of the continuum/stick-boundary assumption at that size scale.
 - The Perrin shape correction approximates the molecule as an equivalent ellipsoid of revolution (prolate/oblate) derived from the geometric gyration tensor; genuinely triaxial (all-three-axes-different) shapes are not treated with the full triaxial Perrin theory, and highly flexible or extremely elongated structures fall outside the range where the rigid-spheroid model is expected to be reliable.

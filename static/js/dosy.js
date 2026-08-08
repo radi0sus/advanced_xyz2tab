@@ -1,8 +1,12 @@
 // dosy.js — DOSY-related size estimates: van der Waals volume (voxel grid,
 // Alvarez 2013 radii — same default radii set as MoloVol, so volumes should
-// be directly comparable at matching grid resolution), the equivalent-sphere
-// hydrodynamic radius r_H (uncorrected Stokes-Einstein), and a shape-corrected
-// r_H using Perrin friction factors for the equivalent ellipsoid.
+// be directly comparable at matching grid resolution), and an equivalent-
+// sphere radius r_eq derived purely from that volume/shape — NOT the
+// experimentally meaningful "hydrodynamic radius" (which is, by definition,
+// whatever radius makes measured D match Stokes-Einstein). r_eq is only a
+// geometric proxy and is systematically too large for small, non-spherical
+// solutes (see README) — this is deliberately not called r_H anywhere in
+// the tool to avoid implying it's calibrated against real diffusion data.
 //
 // No exclusions are applied here — always uses every atom of the currently
 // loaded .xyz file.
@@ -190,7 +194,7 @@ const Dosy = {
             p,
             shape,
             F,
-            rHCorrected: F * r0,
+            rEqCorrected: F * r0,
         };
     },
 };

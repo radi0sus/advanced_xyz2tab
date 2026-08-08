@@ -340,12 +340,9 @@ The `Molecular information` panel additionally shows three size estimates releva
 
 ### Why this isn't called "hydrodynamic radius"
 
-The hydrodynamic radius, properly speaking, is an *empirical* quantity: whatever radius makes a measured diffusion coefficient `D` fit the Stokes–Einstein equation for a given solvent and temperature. `r_eq` here is the reverse — a purely geometric radius computed from the structure alone, with no reference to any measured `D`. The two are not interchangeable, and for small, compact solutes the gap can be large. Two checks against literature data, both in solvents of comparable molecular size to the solute (where the continuum, stick-boundary assumption behind Stokes–Einstein is weakest):
+The hydrodynamic radius, properly speaking, is an *empirical* quantity: whatever radius makes a measured `D` fit Stokes–Einstein for a given solvent and temperature. `r_eq` is the reverse — a purely geometric radius from the structure alone, with no reference to any measured `D`. The two aren't interchangeable. Small, compact solutes checked against literature `D` (cyclopentane in THF-d8, benzene self-diffusion) come out with `r_eq` roughly 1.6–1.8× too large. More tellingly, anthracene doesn't even have *one* "true" empirical radius to compare against: Meyer & Nickel (1980, see citations) fit Stokes–Einstein separately per solvent and get 2.32 Å in hexane but only 1.28 Å in hexadecane for the same molecule — an ~1.8× spread from solvent choice alone, with our r_eq (3.50–3.71 Å) above both. The authors themselves note Stokes–Einstein gives only the right order of magnitude, within a factor of about 2, once solute and solvent are comparably sized.
 
-- **Cyclopentane in THF-d8:** experimental D ≈ 2.27×10⁻⁹ m²/s (Urbank/Vondung, see below) implies r_H ≈ 1.6 Å via Stokes–Einstein (η(THF) ≈ 0.48 mPa·s, 298 K); this tool's r_eq for cyclopentane is 2.76–2.79 Å — roughly 1.7× too large.
-- **Benzene self-diffusion:** literature D ≈ 2.15–2.27×10⁻⁹ m²/s at 25 °C implies r_H ≈ 1.6–1.7 Å (η(benzene) ≈ 0.604 mPa·s); this tool's r_eq for benzene is 2.76 Å (uncorrected) / 2.93 Å (Perrin-corrected) — again roughly 1.6–1.8× too large.
-
-This is expected, not a bug: Stokes–Einstein with a stick boundary condition systematically underestimates `D` (equivalently, overestimates `r_H`) once the solute is comparable in size to, or smaller than, the solvent molecules — the continuum approximation the whole derivation rests on simply doesn't hold at that scale. The Perrin shape correction only adjusts for anisotropy relative to a sphere of the same volume; it does not, and cannot, close this gap, since the gap isn't a shape effect. Treat `r_eq` as a rough, solvent-independent size proxy for comparing structures to each other, not as a stand-in for a real DOSY-derived hydrodynamic radius.
+This is expected, not a bug: the stick-boundary continuum assumption behind Stokes–Einstein breaks down once the solute is comparable in size to the solvent, and how badly it breaks down depends on the solvent — which a purely geometric, solvent-independent radius can never capture. The Perrin correction only adjusts for anisotropy relative to a sphere of equal volume; it doesn't touch this gap. Treat `r_eq` as a rough, solvent-independent size proxy for comparing structures to each other, not as a stand-in for a real DOSY-derived hydrodynamic radius.
 
 ### What this deliberately does not include
 
@@ -384,6 +381,11 @@ Background on why a naive Stokes–Einstein hydrodynamic radius from molecular s
 > "Accurate Molecular Size Determination by Diffusion Ordered NMR Spectroscopy Based on an Improved Diffusion Model",  
 > *Chemistry – A European Journal* **2026**, e71471.  
 > https://doi.org/10.1002/chem.71471
+
+> E. Georg Meyer, Bernhard Nickel,  
+> "Diffusion Coefficients of Aromatic Hydrocarbons in Their Lowest Triplet State: Anthracene in Hexane, Octane, Hexadecane, Perfluorohexane, and Methylcyclohexane; Pyrene and 9,10-Diphenylanthracene in Hexane",  
+> *Zeitschrift für Naturforschung A* **1980**, *35a*, 503–520. (Source of the anthracene per-solvent fitted-radius comparison above.)  
+> https://doi.org/10.1515/zna-1980-0507
 
 ## Atom exclusion
 

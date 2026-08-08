@@ -267,7 +267,7 @@ const Tables = {
 
     // --- Info table ---
     renderInfo(container, parsed) {
-        const { formula, fw, elCount, massFractions, natoms, comment } = parsed;
+        const { formula, fw, elCount, massFractions, natoms, comment, atoms } = parsed;
 
         let html = '<div class="table-label">Molecular information</div>';
         html += '<table class="data-table"><thead><tr>'
@@ -294,11 +294,32 @@ const Tables = {
         }
 
         html += '</tbody></table>';
+
+        // DOSY size estimate — always computed from every atom in the
+        // loaded file (no exclusions), independent of viewer selection.
+        let dosyHtml = '';
+        if (typeof Dosy !== 'undefined' && atoms && atoms.length >= 2) {
+            const est = Dosy.calcEstimate(atoms);
+            dosyHtml = `
+                <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border-color, #444)">
+                    <div style="margin-bottom:4px"><b>Van der Waals volume:</b> ${est.volume.toFixed(1)} &#8491;&sup3;
+                        <span style="color:var(--text-muted);font-size:12px">(voxel grid, Alvarez 2013 radii, ${est.gridSpacing.toFixed(3)} &#8491; spacing)</span>
+                    </div>
+                    <div style="margin-bottom:4px"><b>r<sub>H</sub> (uncorrected):</b> ${est.r0.toFixed(2)} &#8491;
+                        <span style="color:var(--text-muted);font-size:12px">(equivalent-sphere radius, Stokes-Einstein)</span>
+                    </div>
+                    <div><b>r<sub>H</sub> (Perrin-corrected):</b> ${est.rHCorrected.toFixed(2)} &#8491;
+                        <span style="color:var(--text-muted);font-size:12px">(${est.shape}, p&nbsp;=&nbsp;${est.p.toFixed(2)}, F&nbsp;=&nbsp;${est.F.toFixed(3)})</span>
+                    </div>
+                </div>`;
+        }
+
         html += `<div class="result-box" style="margin-top:8px">
             <div style="margin-bottom:4px"><b>Formula:</b> ${Format.chemicalFormula(formula)}</div>
             <div style="margin-bottom:4px"><b>Formula weight:</b> ${fw.toFixed(3)} g/mol</div>
             <div style="margin-bottom:4px"><b>Atoms:</b> ${natoms}</div>
-            ${comment ? `<div><b>Comment:</b> ${comment}</div>` : ''}
+            ${dosyHtml}
+            ${comment ? `<div style="margin-top:6px"><b>Comment:</b> ${comment}</div>` : ''}
         </div>`;
 
         container.innerHTML = html;

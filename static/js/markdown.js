@@ -242,7 +242,15 @@ const Markdown = {
 
         lines.push(`**Formula:** ${mdCell(formattedFormula)}  `);
         lines.push(`**Formula weight:** ${fw.toFixed(3)} g/mol  `);
-        lines.push(`**Atoms:** ${natoms}`);
+        lines.push(`**Atoms:** ${natoms}  `);
+
+        if (typeof Dosy !== 'undefined' && atoms.length >= 2) {
+            const est = Dosy.calcEstimate(atoms);
+            lines.push(`**Van der Waals volume:** ${est.volume.toFixed(1)} Å³ (voxel grid, Alvarez 2013 radii, ${est.gridSpacing.toFixed(3)} Å spacing)  `);
+            lines.push(`**r_H (uncorrected):** ${est.r0.toFixed(2)} Å (equivalent-sphere radius, Stokes-Einstein)  `);
+            lines.push(`**r_H (Perrin-corrected):** ${est.rHCorrected.toFixed(2)} Å (${est.shape}, p = ${est.p.toFixed(2)}, F = ${est.F.toFixed(3)})`);
+        }
+
         lines.push('');
 
         lines.push('| Element | Count | At. weight | Mass fraction % |');

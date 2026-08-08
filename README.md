@@ -34,6 +34,7 @@ No installation and no Python environment are required for normal use.
   - manual distances
   - manual angles
   - manual dihedrals
+  - DOSY-related size estimates: van der Waals volume, uncorrected and Perrin shape-corrected hydrodynamic radius
 - Adjustable covalent-radius tolerance for automatic bond detection
 - Manual graph-active bonds
 - Atom-wise exclusion from analysis
@@ -329,6 +330,52 @@ Rather than a strict yes/no test, every candidate symmetry element (rotation axi
 - The `Dnd` vs. `Dnh` distinction, and the tetrahedral/octahedral sub-classification (`T`/`Th`/`O`/`Td`/`Oh`), rely on the presence/absence of specific elements rather than a full character-table match, and can be sensitive to real-world distortion.
 - As with the ring puckering analysis, this is an approximation intended for quick, interactive orientation, not a substitute for a dedicated symmetry package for publication-grade classification.
 
+## DOSY size estimates
+
+The `Molecular information` panel additionally shows three size estimates relevant for DOSY (diffusion-ordered NMR spectroscopy), computed from every atom of the currently loaded structure (exclusions are not applied here):
+
+- **Van der Waals volume** — the volume of the union of atomic van der Waals spheres, computed on a voxel grid (default spacing 0.2 Å, automatically coarsened for very large/spread-out structures to keep memory bounded). Atomic radii are taken from Alvarez (2013), the same default radii set used by [MoloVol](https://molovol.com), so values should be directly comparable to a MoloVol calculation at a matching grid resolution.
+- **r<sub>H</sub> (uncorrected)** — the radius of a sphere with the same volume as the van der Waals volume, `r0 = (3V/4π)^(1/3)`, used directly as the hydrodynamic radius in the Stokes–Einstein equation. This is the classical, shape-blind estimate.
+- **r<sub>H</sub> (Perrin-corrected)** — `r0` scaled by the Perrin translational friction factor `F(p) = f/f0`, the ratio of the actual friction of a spheroid to that of a sphere of equal volume, as a function of the aspect ratio `p` alone. The aspect ratio is obtained from the geometric gyration tensor of the atom positions (each atom additionally contributing its own van der Waals radius isotropically, so that exactly planar structures don't produce a degenerate, infinitely thin equivalent ellipsoid), classified as prolate or oblate from which pair of eigenvalues is closer together. `F(p)` is computed from the exact Kim & Karrila resistance functions for prolate/oblate spheroids, orientation-averaged as `D = (D∥ + 2D⊥)/3` — the isotropic average relevant for a molecule tumbling freely in solution.
+
+### What this deliberately does not include
+
+- **No probe-excluded void volume.** MoloVol's "molecular volume" (van der Waals volume + void volume inaccessible to a probe sphere, roughly analogous to the Connolly surface) requires a probe radius, which is itself a solvent-size parameter. Since the translational diffusion coefficient `D` from Stokes–Einstein needs the solvent viscosity anyway (also solvent-specific), and that isn't hard-coded here either, the van der Waals volume was kept as the parameter-free default rather than reintroducing a solvent-size choice through a different door.
+- **No explicit solvation shell.** The estimates describe the bare solute; comparison to experimental DOSY-derived hydrodynamic radii should account for the fact that a real diffusing species typically carries at least a partial solvation shell, which is not modeled here.
+- **No diffusion coefficient `D`.** Computing `D` itself from `r_H` via Stokes–Einstein is a one-line calculation the user can do with their own choice of temperature and solvent viscosity; no solvent database is bundled.
+
+### Citations
+
+If you use the van der Waals volume, please cite the radii source:
+
+> Santiago Alvarez,  
+> "A cartography of the van der Waals territories",  
+> *Dalton Transactions* **2013**, *42*, 8617–8636.  
+> https://doi.org/10.1039/C3DT50599E
+
+If you use the Perrin-corrected hydrodynamic radius, please cite:
+
+> Francis Perrin,  
+> "Mouvement brownien d'un ellipsoide (I). Dispersion diélectrique pour des molécules ellipsoidales",  
+> *Journal de Physique et le Radium* **1934**, *5*, 497–511.  
+> https://doi.org/10.1051/jphysrad:01934005010049700
+
+> Francis Perrin,  
+> "Mouvement Brownien d'un ellipsoide (II). Rotation libre et dépolarisation des fluorescences. Translation et diffusion de molécules ellipsoidales",  
+> *Journal de Physique et le Radium* **1936**, *7*, 1–11.  
+> https://doi.org/10.1051/jphysrad:01936007010100
+
+> Sangtae Kim, Seppo J. Karrila,  
+> *Microhydrodynamics: Principles and Selected Applications*,  
+> Butterworth-Heinemann, Boston, **1991**. (Table 3.4/3.6, translational resistance functions for prolate/oblate spheroids — the closed-form expressions this implementation's `F(p)` is derived from.)
+
+Background on why a naive Stokes–Einstein `r_H` from molecular size can be a poor proxy for the DOSY-measured value, and on shape/solvation effects more broadly:
+
+> Julia Urbank, Iris Vondung, et al.,  
+> "Accurate Molecular Size Determination by Diffusion Ordered NMR Spectroscopy Based on an Improved Diffusion Model",  
+> *Chemistry – A European Journal* **2026**, e71471.  
+> https://doi.org/10.1002/chem.71471
+
 ## Atom exclusion
 
 Atoms can be excluded individually in the atom list.
@@ -383,6 +430,7 @@ The viewer reflects:
 The Markdown export includes, depending on available data:
 
 - molecular information
+- DOSY size estimates (van der Waals volume, uncorrected and Perrin-corrected r_H)
 - settings
 - manual distances
 - bond lengths
@@ -517,3 +565,5 @@ See `LICENSE` for details.
 - CShM rating colors (green/orange/red) use a practical threshold convention, not a fixed literature standard.
 - CSV and JSON export are not yet implemented.
 - Analysis state is currently stored only during the active browser session.
+- DOSY size estimates use the van der Waals volume only, not MoloVol's probe-dependent "molecular volume" (void-filled); no solvation shell is modeled and no diffusion coefficient is calculated (see "DOSY size estimates" above for the reasoning).
+- The Perrin shape correction approximates the molecule as an equivalent ellipsoid of revolution (prolate/oblate) derived from the geometric gyration tensor; genuinely triaxial (all-three-axes-different) shapes are not treated with the full triaxial Perrin theory, and highly flexible or extremely elongated structures fall outside the range where the rigid-spheroid model is expected to be reliable.

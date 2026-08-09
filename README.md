@@ -34,7 +34,7 @@ No installation and no Python environment are required for normal use.
   - manual distances
   - manual angles
   - manual dihedrals
-  - DOSY-related size estimates: van der Waals volume, uncorrected and Perrin shape-corrected equivalent-sphere radius (r_eq — a geometric proxy, not the empirical hydrodynamic radius)
+  - DOSY-related size estimates: van der Waals volume, equivalent-sphere radius (r_eq — a geometric proxy, not the empirical hydrodynamic radius), and standard radius of gyration (r_g)
 - Adjustable covalent-radius tolerance for automatic bond detection
 - Manual graph-active bonds
 - Atom-wise exclusion from analysis
@@ -338,20 +338,17 @@ Rather than a strict yes/no test, every candidate symmetry element (rotation axi
 
 ## DOSY size estimates
 
-The `Molecular information` panel additionally shows three size estimates relevant for DOSY (diffusion-ordered NMR spectroscopy), computed from every atom of the currently loaded structure (exclusions are not applied here):
+The `Molecular information` panel additionally shows size estimates relevant for DOSY (diffusion-ordered NMR spectroscopy), computed from every atom of the currently loaded structure (exclusions are not applied here):
 
-- **Van der Waals volume** — the volume of the union of atomic van der Waals spheres, computed on a voxel grid (default spacing 0.2 Å, automatically coarsened for very large/spread-out structures to keep memory bounded). Atomic radii are taken from Alvarez (2013), the same default radii set used by [MoloVol](https://molovol.com), so values should be directly comparable to a MoloVol calculation at a matching grid resolution.
-- **r<sub>eq</sub> (uncorrected)** — the radius of a sphere with the same volume as the van der Waals volume, `r0 = (3V/4π)^(1/3)`. This is a purely geometric quantity, deliberately *not* called "r_H" or "hydrodynamic radius": it is not calibrated against, or derived from, any diffusion measurement — it only says how big the bare, solvent-free molecule is.
-- **r<sub>eq</sub> (Perrin-corrected)** — `r0` scaled by the Perrin translational friction factor `F(p) = f/f0`, the ratio of the actual friction of a spheroid to that of a sphere of equal volume, as a function of the aspect ratio `p` alone. The aspect ratio is obtained from the geometric gyration tensor of the atom positions (each atom additionally contributing its own van der Waals radius isotropically, so that exactly planar structures don't produce a degenerate, infinitely thin equivalent ellipsoid), classified as prolate or oblate from which pair of eigenvalues is closer together. `F(p)` is computed from the exact Kim & Karrila resistance functions for prolate/oblate spheroids, orientation-averaged as `D = (D∥ + 2D⊥)/3` — the isotropic average relevant for a molecule tumbling freely in solution. This corrects for shape only, not for the gap described below.
-- **r<sub>g</sub> (radius of gyration)** — the standard, mass-weighted radius of gyration computed from atom positions, `Rg² = (1/M)·Σ mᵢ|rᵢ−r_cm|²` (IUPAC Gold Book definition; matches LAMMPS' `compute_gyration`, GROMACS' `gmx gyrate`, and OVITO). Shown as an independent, easily externally-verified geometric reference value alongside `r_eq`/`r0` — not converted into another radius estimate here, since there's no clean, standard way to invert an atom-based `Rg` back into an equivalent-sphere radius the way `r0` (volume-based) allows.
-
-  An earlier version of this tool computed a *volumetric* "radius of gyration" instead — over every occupied voxel of the filled van der Waals shape rather than over atom positions — following Miyamoto & Shimono (*Molecules* 2020, 25, 5340), who use that definition to derive an effective radius `r_e = 1.29·r_g` for diffusion estimates. That volumetric quantity is not the standard meaning of "radius of gyration" (it disagreed with LAMMPS/OVITO-computed values by ~40% in testing, exactly because it measures spatial extent of the filled shape rather than nuclear positions), and Miyamoto & Shimono don't report the grid parameters needed to reproduce it independently — so it was dropped in favor of the unambiguous, externally-verifiable standard `Rg` above.
+- **Van der Waals volume** — the volume of the union of atomic van der Waals spheres, computed on a voxel grid (default spacing 0.2 Å, automatically coarsened for very large/spread-out structures to keep memory bounded). Atomic radii are taken from Alvarez (2013), the same default radii set used by [MoloVol](https://molovol.com); the grid boundary padding, origin alignment, and voxel classification follow MoloVol's algorithm directly (see its `space.cpp`/`voxel.cpp`), so results match a MoloVol calculation at the same grid resolution.
+- **r<sub>eq</sub>** — the radius of a sphere with the same volume as the van der Waals volume, `r0 = (3V/4π)^(1/3)`. This is a purely geometric quantity, deliberately *not* called "r_H" or "hydrodynamic radius": it is not calibrated against, or derived from, any diffusion measurement — it only says how big the bare, solvent-free molecule is.
+- **r<sub>g</sub> (radius of gyration)** — the standard, mass-weighted radius of gyration computed from atom positions, `Rg² = (1/M)·Σ mᵢ|rᵢ−r_cm|²` (IUPAC Gold Book definition; matches LAMMPS' `compute_gyration`, GROMACS' `gmx gyrate`, and OVITO). Shown as an independent, easily externally-verified geometric reference value alongside `r_eq`. Note that plugging `Rg` itself into Stokes–Einstein is not appropriate: `Rg` measures where the atomic nuclei sit, not the van der Waals surface the solvent actually has to move around, and comes out noticeably smaller than `r_eq` as a result.
 
 ### Why this isn't called "hydrodynamic radius"
 
-The hydrodynamic radius, properly speaking, is an *empirical* quantity: whatever radius makes a measured `D` fit Stokes–Einstein for a given solvent and temperature. `r_eq` is the reverse — a purely geometric radius from the structure alone, with no reference to any measured `D`. The two aren't interchangeable. Small, compact solutes checked against literature `D` (cyclopentane in THF-d8, benzene self-diffusion) come out with `r_eq` roughly 1.6–1.8× too large. More tellingly, anthracene doesn't even have *one* "true" empirical radius to compare against: Meyer & Nickel (1980, see citations) fit Stokes–Einstein separately per solvent and get 2.32 Å in hexane but only 1.28 Å in hexadecane for the same molecule — an ~1.8× spread from solvent choice alone, with our r_eq (3.50–3.71 Å) above both. The authors themselves note Stokes–Einstein gives only the right order of magnitude, within a factor of about 2, once solute and solvent are comparably sized.
+The hydrodynamic radius, properly speaking, is an *empirical* quantity: whatever radius makes a measured `D` fit Stokes–Einstein for a given solvent and temperature. `r_eq` is the reverse — a purely geometric radius from the structure alone, with no reference to any measured `D`. The two aren't interchangeable, and how far apart they land depends heavily on the size of the solute relative to the solvent, not on some fixed correction factor. Small, compact solutes checked against literature `D` in solvents of comparable size (cyclopentane in THF-d8, benzene self-diffusion, anthracene in hexane/hexadecane — see Meyer & Nickel, 1980, in citations) come out with `r_eq` anywhere from ~1.5× to ~2.9× too large. But that gap isn't universal: alanine in water, where the solvent is far smaller than the solute, comes out within ~10% of the literature `D`. Anthracene doesn't even have *one* "true" empirical radius to compare against — Meyer & Nickel fit Stokes–Einstein separately per solvent and get 2.32 Å in hexane but only 1.28 Å in hexadecane for the same molecule.
 
-This is expected, not a bug: the stick-boundary continuum assumption behind Stokes–Einstein breaks down once the solute is comparable in size to the solvent, and how badly it breaks down depends on the solvent — which a purely geometric, solvent-independent radius can never capture. The Perrin correction only adjusts for anisotropy relative to a sphere of equal volume; it doesn't touch this gap. Treat `r_eq` as a rough, solvent-independent size proxy for comparing structures to each other, not as a stand-in for a real DOSY-derived hydrodynamic radius.
+This is expected, not a bug: the stick-boundary continuum assumption behind Stokes–Einstein breaks down once the solute is comparable in size to the solvent, and how badly it breaks down depends on that size ratio — which a purely geometric, solvent-independent radius can never capture. Treat `r_eq` as a rough, solvent-independent size proxy for comparing structures to each other, not as a stand-in for a real DOSY-derived hydrodynamic radius — and expect it to track experimental values better for solutes much larger than their solvent, and worse when the two are comparably sized.
 
 ### What this deliberately does not include
 
@@ -367,22 +364,6 @@ If you use the van der Waals volume, please cite the radii source:
 > "A cartography of the van der Waals territories",  
 > *Dalton Transactions* **2013**, *42*, 8617–8636.  
 > https://doi.org/10.1039/C3DT50599E
-
-If you use the Perrin-corrected r<sub>eq</sub>, please cite:
-
-> Francis Perrin,  
-> "Mouvement brownien d'un ellipsoide (I). Dispersion diélectrique pour des molécules ellipsoidales",  
-> *Journal de Physique et le Radium* **1934**, *5*, 497–511.  
-> https://doi.org/10.1051/jphysrad:01934005010049700
-
-> Francis Perrin,  
-> "Mouvement Brownien d'un ellipsoide (II). Rotation libre et dépolarisation des fluorescences. Translation et diffusion de molécules ellipsoidales",  
-> *Journal de Physique et le Radium* **1936**, *7*, 1–11.  
-> https://doi.org/10.1051/jphysrad:01936007010100
-
-> Sangtae Kim, Seppo J. Karrila,  
-> *Microhydrodynamics: Principles and Selected Applications*,  
-> Butterworth-Heinemann, Boston, **1991**. (Table 3.4/3.6, translational resistance functions for prolate/oblate spheroids — the closed-form expressions this implementation's `F(p)` is derived from.)
 
 The radius of gyration follows the standard IUPAC definition:
 
@@ -456,7 +437,7 @@ The viewer reflects:
 The Markdown export includes, depending on available data:
 
 - molecular information
-- DOSY size estimates (van der Waals volume, uncorrected and Perrin-corrected r_eq)
+- DOSY size estimates (van der Waals volume, r_eq, r_g)
 - settings
 - manual distances
 - bond lengths
@@ -591,5 +572,4 @@ See `LICENSE` for details.
 - CShM rating colors (green/orange/red) use a practical threshold convention, not a fixed literature standard.
 - CSV and JSON export are not yet implemented.
 - Analysis state is currently stored only during the active browser session.
-- DOSY size estimates use the van der Waals volume only, not MoloVol's probe-dependent "molecular volume" (void-filled); no solvation shell is modeled and no diffusion coefficient is calculated (see "DOSY size estimates" above for the reasoning). The resulting r_eq is a geometric proxy, not the empirical hydrodynamic radius — it runs roughly 1.5–2x too large against real DOSY data for small solutes in comparably-sized solvents (checked against cyclopentane/THF-d8 and benzene self-diffusion literature values), because it doesn't capture the breakdown of the continuum/stick-boundary assumption at that size scale.
-- The Perrin shape correction approximates the molecule as an equivalent ellipsoid of revolution (prolate/oblate) derived from the geometric gyration tensor; genuinely triaxial (all-three-axes-different) shapes are not treated with the full triaxial Perrin theory, and highly flexible or extremely elongated structures fall outside the range where the rigid-spheroid model is expected to be reliable.
+- DOSY size estimates use the van der Waals volume only, not MoloVol's probe-dependent "molecular volume" (void-filled); no solvation shell is modeled and no diffusion coefficient is calculated (see "DOSY size estimates" above for the reasoning). The resulting r_eq is a geometric proxy, not the empirical hydrodynamic radius — it runs roughly 1.5–2.9x too large against real DOSY data for small solutes in comparably-sized solvents (checked against cyclopentane/THF-d8, benzene self-diffusion, and anthracene in various alkanes), because it doesn't capture the breakdown of the continuum/stick-boundary assumption at that size scale.

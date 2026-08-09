@@ -302,16 +302,13 @@ const Tables = {
             const est = Dosy.calcEstimate(atoms);
             dosyHtml = `
                 <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border-color, #444)">
-                    <div style="margin-bottom:4px"><b>Van der Waals volume:</b> ${est.volume.toFixed(1)} &#8491;&sup3;
+                    <div style="margin-bottom:4px"><b>Van der Waals volume:</b> ${est.volume.toFixed(3)} &#8491;&sup3;
                         <span style="color:var(--text-muted);font-size:12px">(voxel grid, Alvarez 2013 radii, ${est.gridSpacing.toFixed(3)} &#8491; spacing)</span>
                     </div>
-                    <div style="margin-bottom:4px"><b>r<sub>eq</sub> (uncorrected):</b> ${est.r0.toFixed(2)} &#8491;
+                    <div style="margin-bottom:4px"><b>r<sub>eq</sub> (uncorrected):</b> ${est.r0.toFixed(3)} &#8491;
                         <span style="color:var(--text-muted);font-size:12px">(vdW-volume-equivalent sphere radius — a geometric proxy, not the empirical hydrodynamic radius)</span>
                     </div>
-                    <div style="margin-bottom:4px"><b>r<sub>eq</sub> (Perrin-corrected):</b> ${est.rEqCorrected.toFixed(2)} &#8491;
-                        <span style="color:var(--text-muted);font-size:12px">(${est.shape}, p&nbsp;=&nbsp;${est.p.toFixed(2)}, F&nbsp;=&nbsp;${est.F.toFixed(3)})</span>
-                    </div>
-                    <div><b>r<sub>g</sub> (radius of gyration):</b> ${est.rg.toFixed(2)} &#8491;
+                    <div><b>r<sub>g</sub> (radius of gyration):</b> ${est.rg.toFixed(3)} &#8491;
                         <span style="color:var(--text-muted);font-size:12px">(mass-weighted, atom positions — IUPAC definition, matches LAMMPS/GROMACS/OVITO)</span>
                     </div>
                 </div>`;

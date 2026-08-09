@@ -254,4 +254,48 @@ const Dosy = {
             rg,
         };
     },
+
+    // --- Diffusion coefficient estimates ---
+    // Two independent routes to a predicted D, both from the same vdW
+    // volume, for exactly the three solvents Urbank & Vondung (2026,
+    // Chem. Eur. J., e71471) fitted their semiempirical model for — CDCl3
+    // is not covered by their data set, so it is deliberately not offered
+    // here rather than guessed at.
+    //
+    //   naive:    plug r_eq (the bare vdW-volume-equivalent sphere radius)
+    //             directly into Stokes-Einstein. This is the classical,
+    //             shape/solvation-blind approach discussed at length in the
+    //             README, and is included mainly as a contrast — expect it
+    //             to run systematically low (see the cyclopentane/THF-d8
+    //             and anthracene cross-checks in the README).
+    //   vondung:  first predict the empirical hydrodynamic radius via the
+    //             paper's fitted power law rH = a * VvdW^b (solvent- and
+    //             fit-specific a, b), THEN apply Stokes-Einstein to that.
+    //             This is the approach the paper itself validates against
+    //             real DOSY data, with the "err" fraction below being their
+    //             own reported relative error for that solvent.
+    //
+    // Viscosities (eta, Pa*s) are Holz reference values, exactly as used by
+    // the paper's own calculator spreadsheet — reusing them (rather than a
+    // different literature source) keeps the naive/vondung comparison an
+    // apples-to-apples test of the radius model, not the viscosity source.
+    solventParams: {
+        'THF-d8':     { a: 0.163, b: 0.57,  eta: 0.00048567605047843566, err: 0.11 },
+        'C6D6':       { a: 0.112, b: 0.599, eta: 0.0006263140442965048,  err: 0.09 },
+        'Toluene-d8': { a: 0.100, b: 0.65,  eta: 0.0005844627740395051,  err: 0.12 },
+    },
+
+    kB: 1.380649e-23, // J/K
+    T_DEFAULT: 298.15, // K — fixed, matching the typical DOSY measurement temperature
+
+    calcDiffusionEstimates(volume, rEq) {
+        const results = {};
+        for (const [solvent, p] of Object.entries(this.solventParams)) {
+            const rHVondung = p.a * Math.pow(volume, p.b); // Å
+            const dVondung = this.kB * this.T_DEFAULT / (6 * Math.PI * p.eta * rHVondung * 1e-10);
+            const dNaive = this.kB * this.T_DEFAULT / (6 * Math.PI * p.eta * rEq * 1e-10);
+            results[solvent] = { rHVondung, dVondung, dNaive, err: p.err };
+        }
+        return results;
+    },
 };

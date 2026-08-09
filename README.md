@@ -352,9 +352,19 @@ This is expected, not a bug: the stick-boundary continuum assumption behind Stok
 
 ### What this deliberately does not include
 
-- **No probe-excluded void volume.** MoloVol's "molecular volume" (van der Waals volume + void volume inaccessible to a probe sphere, roughly analogous to the Connolly surface) requires a probe radius, which is itself a solvent-size parameter. Since the translational diffusion coefficient `D` from Stokes–Einstein needs the solvent viscosity anyway (also solvent-specific), and that isn't hard-coded here either, the van der Waals volume was kept as the parameter-free default rather than reintroducing a solvent-size choice through a different door.
+- **No probe-excluded void volume.** MoloVol's "molecular volume" (van der Waals volume + void volume inaccessible to a probe sphere, roughly analogous to the Connolly surface) requires a probe radius, which is itself a solvent-size parameter. The van der Waals volume was kept as the parameter-free default rather than reintroducing a solvent-size choice through a different door.
 - **No explicit solvation shell.** The estimates describe the bare solute; as shown above, this is only part of why `r_eq` differs from an experimental hydrodynamic radius.
-- **No diffusion coefficient `D`.** Computing `D` itself from a radius via Stokes–Einstein is a one-line calculation the user can do with their own choice of temperature and solvent viscosity; no solvent database is bundled.
+
+## D estimate
+
+Below the size estimates, the panel also predicts a diffusion coefficient `D` at 298.15 K for three deuterated NMR solvents — **THF-d₈, benzene-d₆, and toluene-d₈** — using two different routes from the same van der Waals volume:
+
+- **D from r<sub>eq</sub>** — `r_eq` plugged directly into Stokes–Einstein, `D = kT/(6πη·r_eq)`. This is the classical, shape/solvation-blind calculation, shown mainly as a contrast: per the discussion above, expect it to run systematically low — e.g. −28% for cyclopentane in THF-d8 against the literature value.
+- **D<sub>x,norm</sub>** — the empirical hydrodynamic radius is predicted first, via the power law `r_H = a·V_vdW^b` fitted by Urbank & Vondung (2026, see citations) separately for each of these three solvents, and *that* is what goes into Stokes–Einstein. This is the model the paper itself validates against real DOSY measurements, with the reported ± error next to each solvent being their own value (9–12%, depending on solvent). The same cyclopentane/THF-d8 check comes out at only −5% with this route.
+
+  The label matters: `a` and `b` were fitted against Urbank & Vondung's own experimental diffusion coefficients *after* normalization, `Dx,norm = (Dref,fix / Dref) · Dx` — the normalized-diffusion-coefficient method of Neufeld & Stalke (2015, see citations), where `Dx` and `Dref` are the diffusion coefficients of the analyte and an internal reference compound measured together in the same sample, and `Dref,fix` is that reference compound's fixed literature value. This one-reference correction removes run-to-run variation (gradient/temperature calibration etc.) without needing an external, independently-calibrated viscosity for every single measurement. Consequently, inverting the fit here predicts `Dx,norm`, not a raw, unnormalized `D`. A raw DOSY measurement of your own compound is not directly comparable to this column; normalize it the same way first (an internal reference in the same sample, per Neufeld & Stalke and per Step 3 of Urbank & Vondung's step-by-step guide) before comparing.
+
+Viscosities are the Holz reference values used directly in the paper's own supplementary calculator spreadsheet, so the two columns isolate the effect of the radius model rather than mixing in a different viscosity source. No solvent database beyond these three is bundled, and no temperature dependence is modeled (298.15 K only) — this stays a size-based estimate for the specific case the underlying model was actually fitted and validated for, not a general-purpose DOSY calculator.
 
 ### Citations
 
@@ -371,12 +381,19 @@ The radius of gyration follows the standard IUPAC definition:
 > "radius of gyration",  
 > https://doi.org/10.1351/goldbook.R05121
 
-Background on why a naive Stokes–Einstein hydrodynamic radius from molecular size can be a poor proxy for the DOSY-measured value, and on shape/solvation effects more broadly:
+The `D` estimate, the `Vondung` radius model, and background on why a naive Stokes–Einstein hydrodynamic radius from molecular size can be a poor proxy for the DOSY-measured value:
 
-> Julia Urbank, Iris Vondung, et al.,  
+> Christian Urbank, Lisa Vondung,  
 > "Accurate Molecular Size Determination by Diffusion Ordered NMR Spectroscopy Based on an Improved Diffusion Model",  
 > *Chemistry – A European Journal* **2026**, e71471.  
 > https://doi.org/10.1002/chem.71471
+
+The `Dx,norm` normalization convention (`Dx,norm = (Dref,fix/Dref)·Dx`) that Urbank & Vondung's model was fitted against:
+
+> Roman Neufeld, Dietmar Stalke,  
+> "Accurate molecular weight determination of small molecules via DOSY-NMR by using external calibration curves with normalized diffusion coefficients",  
+> *Chemical Science* **2015**, *6*, 3354–3364.  
+> https://doi.org/10.1039/C5SC00670H
 
 > E. Georg Meyer, Bernhard Nickel,  
 > "Diffusion Coefficients of Aromatic Hydrocarbons in Their Lowest Triplet State: Anthracene in Hexane, Octane, Hexadecane, Perfluorohexane, and Methylcyclohexane; Pyrene and 9,10-Diphenylanthracene in Hexane",  
@@ -437,7 +454,7 @@ The viewer reflects:
 The Markdown export includes, depending on available data:
 
 - molecular information
-- DOSY size estimates (van der Waals volume, r_eq, r_g)
+- DOSY size estimates (van der Waals volume, r_eq, r_g) and D predictions for THF-d8/C6D6/toluene-d8 (naive Stokes–Einstein and the Urbank & Vondung semiempirical model)
 - settings
 - manual distances
 - bond lengths

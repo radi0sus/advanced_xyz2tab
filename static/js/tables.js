@@ -312,6 +312,25 @@ const Tables = {
                         <span style="color:var(--text-muted);font-size:12px">(mass-weighted, atom positions — IUPAC definition, matches LAMMPS/GROMACS/OVITO)</span>
                     </div>
                 </div>`;
+
+            const dEst = Dosy.calcDiffusionEstimates(est.volume, est.r0);
+            const fmtD = d => (d * 1e9).toFixed(3);
+            const solventLabel = { 'THF-d8': 'THF-d' + Format.subscriptNumber(8), 'C6D6': 'Benzene-d' + Format.subscriptNumber(6), 'Toluene-d8': 'Toluene-d' + Format.subscriptNumber(8) };
+            let dRows = '';
+            for (const [solvent, v] of Object.entries(dEst)) {
+                dRows += `<tr><td>${solventLabel[solvent] || solvent}</td><td>${fmtD(v.dNaive)}</td><td>${fmtD(v.dVondung)} &plusmn;${(v.err * 100).toFixed(0)}%</td></tr>`;
+            }
+            dosyHtml += `
+                <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border-color, #444)">
+                    <div style="margin-bottom:4px"><b>D estimate</b>
+                        <span style="color:var(--text-muted);font-size:12px">(298.15 K; solvents and coefficients from Urbank &amp; Vondung, 2026)</span>
+                    </div>
+                    <table class="data-table">
+                        <thead><tr><th>Solvent</th><th>D from r<sub>eq</sub> / 10&#8315;&#8313; m&sup2;&middot;s&#8315;&sup1;</th><th>D<sub>x,norm</sub> / 10&#8315;&#8313; m&sup2;&middot;s&#8315;&sup1;</th></tr></thead>
+                        <tbody>${dRows}</tbody>
+                    </table>
+                    <div style="margin-top:4px;color:var(--text-muted);font-size:12px">"D from r<sub>eq</sub>" plugs r<sub>eq</sub> directly into Stokes&ndash;Einstein and is shown for contrast &mdash; expect it to run systematically low. "D<sub>x,norm</sub>" predicts r<sub>H</sub> = a&middot;V<sub>vdW</sub><sup>b</sup> first, then applies Stokes&ndash;Einstein &mdash; this corresponds to a Stalke-normalized diffusion coefficient (see README), not a raw measured D; &plusmn;error is the paper's own reported value for that solvent.</div>
+                </div>`;
         }
 
         html += `<div class="result-box" style="margin-top:8px">

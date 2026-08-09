@@ -13,8 +13,8 @@ No installation and no Python environment are required for normal use.
 
 ## Features
 
-- Load `.xyz` molecular structures directly in the browser
-- **Paste XYZ data from clipboard** — paste xyz text directly (`Ctrl+V`/`Cmd+V`) into a modal instead of loading a file, for quickly trying out coordinates copied from somewhere else
+- Load `.xyz`, `.mol`, or `.sdf` molecular structures directly in the browser (including PubChem SDF exports, with a warning for flat 2D depictions)
+- **Paste XYZ or MOL/SDF data from clipboard** — paste text directly (`Ctrl+V`/`Cmd+V`) into a modal instead of loading a file, for quickly trying out coordinates copied from somewhere else
 - Interactive 3D molecular viewer using 3Dmol.js
 - Calculation of:
   - sum formula
@@ -93,6 +93,12 @@ The `Paste .xyz` modal accepts the same format, but is more forgiving about surr
 - the atom-count and comment header lines are optional — pasting just the `Element x y z` lines works too
 
 Each atom line is still validated strictly: it must be `Element x y z` (exactly 4 columns). Lines with only 3 columns — either `x y z` (missing element) or `Element x y` (missing z, e.g. a truncated/cut-off line) — are rejected with a specific error message and line number rather than silently accepted or dropped.
+
+### MOL / SDF input
+
+`.mol` and `.sdf` files (V2000 CTAB format) are also accepted — via drag-and-drop, `Open file`, or paste — so a structure downloaded directly from PubChem (or exported from most other chemistry software) doesn't need an external XYZ conversion step first. Only atom coordinates and elements are read; bonds in the file are ignored, since the tool already derives connectivity itself from covalent radii, the same way it does for `.xyz` input. If an `.sdf` contains several `$$$$`-separated records, only the first is loaded, with a warning that the rest was ignored.
+
+**2D depictions:** a `.mol`/`.sdf` can encode a flat 2D depiction (all z = 0) rather than a real 3D conformer — this happens when a structure is fetched without explicitly requesting 3D coordinates (e.g. PubChem's default 2D structure download, as opposed to its separate "3D Conformer" download). Since every geometry-dependent feature here (bond angles, CShM, symmetry, the DOSY size estimates, ...) needs real 3D coordinates, such a file loads with a warning rather than silently producing degenerate, meaningless results.
 
 ## Atom labels
 

@@ -235,10 +235,11 @@ const App = {
 
         reader.onload = e => {
             try {
-                this.parsed = Parser.parse(e.target.result);
+                this.parsed = Parser.parseAuto(e.target.result, file.name);
+                this._warnIfNonIdeal(this.parsed);
                 this.setup();
             } catch (err) {
-                alert('Error parsing .xyz file: ' + err.message);
+                alert('Error parsing file: ' + err.message);
             }
         };
 
@@ -247,12 +248,34 @@ const App = {
 
     loadPastedText(text) {
         try {
-            this.parsed = Parser.parseLenient(text);
+            this.parsed = Parser.parseAuto(text);
+            this._warnIfNonIdeal(this.parsed);
             this.setup();
             return true;
         } catch (err) {
-            alert('Error parsing pasted .xyz data: ' + err.message);
+            alert('Error parsing pasted data: ' + err.message);
             return false;
+        }
+    },
+
+    // Surfaces a warning for structural input that will silently produce
+    // meaningless geometry-derived results otherwise — currently just the
+    // 2D-depiction case for .mol/.sdf input (all z == 0, or an explicit "2D"
+    // dimension code), where every downstream calculation that relies on
+    // real 3D coordinates (angles, CShM, symmetry, DOSY volumes, ...) would
+    // otherwise run on a degenerate flat structure without any indication
+    // why the results look off.
+    _warnIfNonIdeal(parsed) {
+        if (parsed.is2D) {
+            alert(
+                'This looks like a 2D structure (all z-coordinates are ~0), not a real 3D conformer.\n\n' +
+                'Bond angles, symmetry, CShM, and the DOSY size estimates all need actual 3D geometry ' +
+                'and will not give meaningful results on a flat depiction.\n\n' +
+                'If this came from PubChem, use the "3D Conformer" download rather than the default 2D structure.'
+            );
+        }
+        if (parsed.extraRecords) {
+            alert('This file contains more than one structure (multiple "$$$$"-separated records). Only the first was loaded.');
         }
     },
 

@@ -128,6 +128,23 @@ const Parser = {
         return { natoms, comment, atoms, formula, fw, elCount, massFractions };
     },
 
+    // --- Format-sniffing dispatcher ---
+    // Used for file loads and paste, so both accept .xyz and .mol/.sdf
+    // content without the caller needing to know the format up front.
+    // Extension (when available) is the primary signal; content sniffing is
+    // the fallback for paste (no filename) or a mismatched/missing extension.
+    parseAuto(text, filename = '') {
+        const ext = (filename.split('.').pop() || '').toLowerCase();
+
+        if (ext === 'sdf' || ext === 'mol') return this.parseSDF(text);
+        if (ext === 'xyz') return this.parseLenient(text);
+
+        // No usable extension: sniff the content. An .xyz's first non-blank
+        // line is a bare atom count; a .mol/.sdf's 4th line (the counts
+        // line) contains "V2000"/"V3000", which never appears in .xyz.
+        if (/\bV[23]000\b/.test(text.slice(0, 2000))) return this.parseSDF(text);
+        return this.parseLenient(text);
+    },
     // Lenient variant used for the "Paste .xyz" modal. It tolerates things a
     // strict file parser shouldn't have to (stray blank lines anywhere,
     // a missing/omitted atom-count or comment header), but is STRICT about
@@ -255,6 +272,116 @@ const Parser = {
         const rest = els.filter(e => e !== 'C' && e !== 'H').sort();
         order.push(...rest);
         return order.map(e => elCount[e] > 1 ? e + elCount[e] : e).join('');
+    },
+
+    // Shared by parse/parseLenient/parseSDF: labels atoms, derives the Hill
+    // formula, formula weight, and mass fractions from a finished atom list.
+    _finalize(atoms, elCount, comment, extra = {}) {
+        this.labelAtoms(atoms, 0);
+
+        const formula = this._hillFormula(elCount);
+
+        let fw = 0;
+        for (const [el, cnt] of Object.entries(elCount)) {
+            fw += (this.atomicWeights[el] || 0) * cnt;
+        }
+
+        const massFractions = {};
+        for (const [el, cnt] of Object.entries(elCount)) {
+            massFractions[el] = ((this.atomicWeights[el] || 0) * cnt / fw) * 100;
+        }
+
+        return { natoms: atoms.length, comment, atoms, formula, fw, elCount, massFractions, ...extra };
+    },
+
+    // --- MOL/SDF (V2000) parser ---
+    // Reads the CTAB (connection table) of a .mol file, or the first
+    // molecule record of a (possibly multi-structure) .sdf file such as a
+    // PubChem "3D conformer" export. Only atom coordinates + elements are
+    // used — bonds are ignored, since the rest of the tool already derives
+    // connectivity itself from covalent radii, exactly as it does for .xyz
+    // input. SDF data-item tags (the "> <TAG>" blocks after M  END) are not
+    // parsed; only the CTAB matters here.
+    //
+    // A .sdf/.mol file can encode a flat 2D depiction (all z == 0) rather
+    // than a real 3D geometry — common for structures fetched without
+    // explicitly requesting a 3D conformer. Every downstream calculation in
+    // this tool (bond angles, CShM, symmetry, DOSY volumes...) needs real
+    // 3D coordinates, so this is flagged via the returned `is2D` flag rather
+    // than silently producing a degenerate flat "molecule".
+    parseSDF(text) {
+        const rawLines = text.split(/\r?\n/);
+
+        // Only the first molecule record is loaded — same "one structure
+        // per file" model as .xyz. A multi-compound SDF (several records
+        // separated by "$$$$") is noted via `extraRecords` so the caller can
+        // warn that the rest of the file was ignored.
+        const delimIdx = rawLines.findIndex(l => l.trim() === '$$$$');
+        const block = delimIdx === -1 ? rawLines : rawLines.slice(0, delimIdx);
+        const extraRecords = delimIdx === -1
+            ? 0
+            : rawLines.slice(delimIdx + 1).some(l => l.trim() !== '') ? 1 : 0;
+
+        if (block.length < 4) throw new Error('Not a valid .mol/.sdf file (missing header).');
+
+        const countsLine = block[3] || '';
+        // Fixed-width per the CTAB spec (3 chars per count field), but fall
+        // back to whitespace splitting for files that don't pad exactly —
+        // common with files written by non-MDL-conforming tools.
+        let natoms = parseInt(countsLine.slice(0, 3), 10);
+        if (isNaN(natoms)) {
+            const parts = countsLine.trim().split(/\s+/);
+            natoms = parseInt(parts[0], 10);
+        }
+        if (isNaN(natoms)) throw new Error('Could not read atom count from the counts line.');
+
+        const atomLines = block.slice(4, 4 + natoms);
+        if (atomLines.length < natoms) throw new Error('File ends before all atom lines were read — truncated .mol/.sdf?');
+
+        const atoms = [];
+        const elCount = {};
+        let maxAbsZ = 0;
+
+        for (const line of atomLines) {
+            // Atom line: x(10) y(10) z(10) element(3) ... (whitespace-
+            // tolerant split works for the vast majority of real files).
+            const parts = line.trim().split(/\s+/);
+            if (parts.length < 4) continue;
+
+            const x = parseFloat(parts[0]);
+            const y = parseFloat(parts[1]);
+            const z = parseFloat(parts[2]);
+            const el = parts[3];
+            if (!isFinite(x) || !isFinite(y) || !isFinite(z) || !el) continue;
+
+            maxAbsZ = Math.max(maxAbsZ, Math.abs(z));
+
+            const element = el.charAt(0).toUpperCase() + el.slice(1).toLowerCase();
+            elCount[element] = (elCount[element] || 0) + 1;
+            atoms.push({ index: atoms.length, element, x, y, z });
+        }
+
+        if (atoms.length === 0) throw new Error('No atoms found in the .mol/.sdf CTAB.');
+
+        // Two 2D signals, in order of trust:
+        // 1) The MDL "dimensional code" on the program line — PubChem/OEChem
+        //    etc. reliably write it as a "2D"/"3D" suffix (e.g.
+        //    "-OEChem-08092607053D"), which is NOT bounded by \b since
+        //    digits and letters are both word characters — check the line
+        //    ending directly instead.
+        // 2) A z==0 fallback, used only when no dimension code is present.
+        //    This must be an EXACT-zero check, not a small tolerance: a real
+        //    3D conformer of a genuinely (near-)planar molecule (e.g.
+        //    aniline) can have out-of-plane deviations as small as 1e-4 Å,
+        //    which a "< 1e-3" tolerance would misflag as 2D. An actual 2D
+        //    depiction writes a literal 0.0000 for every atom with no
+        //    exceptions, so exact equality is the correct discriminator.
+        const dimCode = (block[1] || '').trim().match(/([23])D\s*$/i);
+        const is2D = dimCode ? dimCode[1] === '2' : maxAbsZ === 0;
+
+        const comment = (block[1] || '').trim();
+
+        return this._finalize(atoms, elCount, comment, { is2D, extraRecords });
     },
 
     getCovRadius(element) {

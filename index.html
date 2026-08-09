@@ -14,7 +14,7 @@
 
 <div id="paste-modal">
     <div id="paste-modal-box">
-        <h3>Paste XYZ data</h3>
+        <h3>Paste XYZ or MOL/SDF data</h3>
         <p id="paste-modal-hint">Click into the field below and press <code>Ctrl+V</code> (or <code>Cmd+V</code>) to paste. It loads automatically as soon as you paste.</p>
         <textarea id="paste-textarea" placeholder="Click here, then paste (Ctrl+V)…" spellcheck="false"></textarea>
         <div id="paste-modal-actions">
@@ -40,9 +40,9 @@
         
             <button id="btn-export-md" class="btn" disabled>Export .md</button>
             <button id="btn-export-png" class="btn" disabled>Export .png</button>
-            <button id="btn-paste-clipboard" class="btn" type="button">Paste .xyz</button>
-            <label class="btn btn-primary" for="file-input">Open .xyz</label>
-            <input type="file" id="file-input" accept=".xyz" style="display:none">
+            <button id="btn-paste-clipboard" class="btn" type="button">Paste .xyz/.mol</button>
+            <label class="btn btn-primary" for="file-input">Open file</label>
+            <input type="file" id="file-input" accept=".xyz,.sdf,.mol" style="display:none">
         </div>
     </header>
 
@@ -50,7 +50,7 @@
     <div id="dropzone">
         <div id="dropzone-inner">
             <div id="dropzone-icon">⬡</div>
-            <div id="dropzone-text">Drop a .xyz file here or click <strong>Open .xyz</strong></div>
+            <div id="dropzone-text">Drop a .xyz, .sdf, or .mol file here or click <strong>Open file</strong></div>
         </div>
     </div>
 

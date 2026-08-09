@@ -337,7 +337,9 @@ The `Molecular information` panel additionally shows three size estimates releva
 - **Van der Waals volume** — the volume of the union of atomic van der Waals spheres, computed on a voxel grid (default spacing 0.2 Å, automatically coarsened for very large/spread-out structures to keep memory bounded). Atomic radii are taken from Alvarez (2013), the same default radii set used by [MoloVol](https://molovol.com), so values should be directly comparable to a MoloVol calculation at a matching grid resolution.
 - **r<sub>eq</sub> (uncorrected)** — the radius of a sphere with the same volume as the van der Waals volume, `r0 = (3V/4π)^(1/3)`. This is a purely geometric quantity, deliberately *not* called "r_H" or "hydrodynamic radius": it is not calibrated against, or derived from, any diffusion measurement — it only says how big the bare, solvent-free molecule is.
 - **r<sub>eq</sub> (Perrin-corrected)** — `r0` scaled by the Perrin translational friction factor `F(p) = f/f0`, the ratio of the actual friction of a spheroid to that of a sphere of equal volume, as a function of the aspect ratio `p` alone. The aspect ratio is obtained from the geometric gyration tensor of the atom positions (each atom additionally contributing its own van der Waals radius isotropically, so that exactly planar structures don't produce a degenerate, infinitely thin equivalent ellipsoid), classified as prolate or oblate from which pair of eigenvalues is closer together. `F(p)` is computed from the exact Kim & Karrila resistance functions for prolate/oblate spheroids, orientation-averaged as `D = (D∥ + 2D⊥)/3` — the isotropic average relevant for a molecule tumbling freely in solution. This corrects for shape only, not for the gap described below.
-- **r<sub>g</sub> (grid-based radius of gyration) and gyration-based r<sub>e</sub>** — an independent, non-Perrin cross-check on the shape correction, following Miyamoto & Shimono (2020, see citations). `r_g` is the radius of gyration of the *filled* van der Waals shape (computed over every occupied voxel of the same grid used for the volume, not over atom centers), and `r_e = √(5/3)·r_g` inverts the exact sphere relation `r_g = √(3/5)·r` — for a sphere this exactly reproduces `r0`; for anisotropic shapes it inflates the radius automatically, without any hydrodynamic theory. It's shown alongside, not instead of, the Perrin correction because the two typically disagree — for anthracene, Perrin inflates `r0` by ~6%, the gyration-based `r_e` by ~26%. This isn't a bug: translational hydrodynamic friction is known to be only weakly shape-dependent (Perrin's F(p) reflects that), whereas `r_g` measures raw spatial extent, which for flat/elongated molecules grows much faster. Miyamoto & Shimono's own K = √(5/3) ≈ 1.29 factor was in any case empirically calibrated against aqueous diffusion data for small, mostly compact, hydrogen-bonding solutes (sugars, amino acids) — it isn't re-derived or re-validated here for the organic NMR solvents this tool targets, so treat `r_e` as informative context on the shape sensitivity of the estimate, not as a better answer than the Perrin-corrected value.
+- **r<sub>g</sub> (radius of gyration)** — the standard, mass-weighted radius of gyration computed from atom positions, `Rg² = (1/M)·Σ mᵢ|rᵢ−r_cm|²` (IUPAC Gold Book definition; matches LAMMPS' `compute_gyration`, GROMACS' `gmx gyrate`, and OVITO). Shown as an independent, easily externally-verified geometric reference value alongside `r_eq`/`r0` — not converted into another radius estimate here, since there's no clean, standard way to invert an atom-based `Rg` back into an equivalent-sphere radius the way `r0` (volume-based) allows.
+
+  An earlier version of this tool computed a *volumetric* "radius of gyration" instead — over every occupied voxel of the filled van der Waals shape rather than over atom positions — following Miyamoto & Shimono (*Molecules* 2020, 25, 5340), who use that definition to derive an effective radius `r_e = 1.29·r_g` for diffusion estimates. That volumetric quantity is not the standard meaning of "radius of gyration" (it disagreed with LAMMPS/OVITO-computed values by ~40% in testing, exactly because it measures spatial extent of the filled shape rather than nuclear positions), and Miyamoto & Shimono don't report the grid parameters needed to reproduce it independently — so it was dropped in favor of the unambiguous, externally-verifiable standard `Rg` above.
 
 ### Why this isn't called "hydrodynamic radius"
 
@@ -376,12 +378,11 @@ If you use the Perrin-corrected r<sub>eq</sub>, please cite:
 > *Microhydrodynamics: Principles and Selected Applications*,  
 > Butterworth-Heinemann, Boston, **1991**. (Table 3.4/3.6, translational resistance functions for prolate/oblate spheroids — the closed-form expressions this implementation's `F(p)` is derived from.)
 
-If you use the grid-based radius of gyration or the gyration-based `r_e` cross-check, please cite:
+The radius of gyration follows the standard IUPAC definition:
 
-> Shuichi Miyamoto, Kazumi Shimono,  
-> "Molecular Modeling to Estimate the Diffusion Coefficients of Drugs and Other Small Molecules",  
-> *Molecules* **2020**, *25*, 5340.  
-> https://doi.org/10.3390/molecules25225340
+> IUPAC Gold Book,  
+> "radius of gyration",  
+> https://doi.org/10.1351/goldbook.R05121
 
 Background on why a naive Stokes–Einstein hydrodynamic radius from molecular size can be a poor proxy for the DOSY-measured value, and on shape/solvation effects more broadly:
 

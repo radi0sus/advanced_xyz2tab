@@ -311,8 +311,8 @@ const Tables = {
                     <div style="margin-bottom:4px"><b>r<sub>eq</sub> (Perrin-corrected):</b> ${est.rEqCorrected.toFixed(2)} &#8491;
                         <span style="color:var(--text-muted);font-size:12px">(${est.shape}, p&nbsp;=&nbsp;${est.p.toFixed(2)}, F&nbsp;=&nbsp;${est.F.toFixed(3)})</span>
                     </div>
-                    <div><b>r<sub>g</sub> (grid-based radius of gyration):</b> ${est.rg.toFixed(2)} &#8491;
-                        <span style="color:var(--text-muted);font-size:12px">→ gyration-based r<sub>e</sub> = ${est.rGyrationEff.toFixed(2)} &#8491; (Miyamoto/Shimono cross-check, independent of Perrin)</span>
+                    <div><b>r<sub>g</sub> (radius of gyration):</b> ${est.rg.toFixed(2)} &#8491;
+                        <span style="color:var(--text-muted);font-size:12px">(mass-weighted, atom positions — IUPAC definition, matches LAMMPS/GROMACS/OVITO)</span>
                     </div>
                 </div>`;
         }

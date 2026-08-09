@@ -249,7 +249,7 @@ const Markdown = {
             lines.push(`**Van der Waals volume:** ${est.volume.toFixed(1)} Å³ (voxel grid, Alvarez 2013 radii, ${est.gridSpacing.toFixed(3)} Å spacing)  `);
             lines.push(`**r_eq (uncorrected):** ${est.r0.toFixed(2)} Å (vdW-volume-equivalent sphere radius — a geometric proxy, not the empirical hydrodynamic radius)  `);
             lines.push(`**r_eq (Perrin-corrected):** ${est.rEqCorrected.toFixed(2)} Å (${est.shape}, p = ${est.p.toFixed(2)}, F = ${est.F.toFixed(3)})  `);
-            lines.push(`**r_g (grid-based radius of gyration):** ${est.rg.toFixed(2)} Å → gyration-based r_e = ${est.rGyrationEff.toFixed(2)} Å (Miyamoto/Shimono cross-check, independent of Perrin)`);
+            lines.push(`**r_g (radius of gyration):** ${est.rg.toFixed(2)} Å (mass-weighted, atom positions — IUPAC definition, matches LAMMPS/GROMACS/OVITO)`);
         }
 
         lines.push('');

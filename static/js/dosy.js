@@ -79,9 +79,38 @@ const Dosy = {
         });
 
         let count = 0;
-        for (let k = 0; k < grid.length; k++) count += grid[k];
+        // Grid-based radius of gyration r_g: computed over every occupied
+        // voxel of the filled vdW shape (not the atom centers), following
+        // Miyamoto & Shimono (2020, see README citations). Accumulated via
+        // sum/sum-of-squares per axis so r_g^2 = E[x^2]-E[x]^2 summed over
+        // x,y,z (parallel-axis form), avoiding a second pass over the grid.
+        let sx = 0, sy = 0, sz = 0, sx2 = 0, sy2 = 0, sz2 = 0;
+        for (let ix = 0; ix < nx; ix++) {
+            const vx = minX + (ix + 0.5) * h;
+            const base_x = ix * strideX;
+            for (let iy = 0; iy < ny; iy++) {
+                const vy = minY + (iy + 0.5) * h;
+                const base = base_x + iy * strideY;
+                for (let iz = 0; iz < nz; iz++) {
+                    if (!grid[base + iz]) continue;
+                    const vz = minZ + (iz + 0.5) * h;
+                    count++;
+                    sx += vx; sy += vy; sz += vz;
+                    sx2 += vx * vx; sy2 += vy * vy; sz2 += vz * vz;
+                }
+            }
+        }
 
-        return { volume: count * h * h * h, gridSpacing: h, voxelCount: nx * ny * nz };
+        let rg = 0;
+        if (count > 0) {
+            const mx = sx / count, my = sy / count, mz = sz / count;
+            const varX = sx2 / count - mx * mx;
+            const varY = sy2 / count - my * my;
+            const varZ = sz2 / count - mz * mz;
+            rg = Math.sqrt(Math.max(0, varX + varY + varZ));
+        }
+
+        return { volume: count * h * h * h, gridSpacing: h, voxelCount: nx * ny * nz, rg };
     },
 
     // --- Shape (aspect ratio) from the geometric gyration tensor ---
@@ -182,10 +211,20 @@ const Dosy = {
     // --- Combined DOSY estimate ---
     // No exclusions: always uses every atom in the currently loaded file.
     calcEstimate(atoms) {
-        const { volume, gridSpacing } = this.calcVdwVolume(atoms);
+        const { volume, gridSpacing, rg } = this.calcVdwVolume(atoms);
         const r0 = Math.cbrt((3 * volume) / (4 * Math.PI));
         const { p, shape } = this.calcAspectRatio(atoms);
         const F = this.calcPerrinFactor(p);
+
+        // Gyration-based effective radius (Miyamoto & Shimono, 2020): invert
+        // the sphere relation r_g = sqrt(3/5)*r using the shape's *actual*
+        // r_g, so anisotropic shapes (which have a larger r_g than a sphere
+        // of equal volume) come out inflated automatically, without any
+        // Perrin friction-tensor math. This is an independent, purely
+        // geometric cross-check on the Perrin correction above — not a
+        // replacement for it, and (unlike Perrin's F(p)) not derived from
+        // hydrodynamic theory at all.
+        const rGyrationEff = Math.sqrt(5 / 3) * rg;
 
         return {
             volume,
@@ -195,6 +234,8 @@ const Dosy = {
             shape,
             F,
             rEqCorrected: F * r0,
+            rg,
+            rGyrationEff,
         };
     },
 };

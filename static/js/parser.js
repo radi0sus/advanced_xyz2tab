@@ -153,11 +153,39 @@ const Parser = {
         let comment = '';
 
         // Standard header: first non-blank line is a bare integer atom count.
-        // If present, the following line is treated as the comment (also
-        // optional in the sense that it's simply whatever text is there).
+        // Use that declared count to disambiguate whether the *next* line is
+        // a comment or already the first atom — some pasted snippets omit
+        // the (technically optional) comment line entirely, going straight
+        // from "N" to "element x y z". Blindly assuming line 2 is always the
+        // comment would then eat the first atom.
         if (/^\d+$/.test(lines[0].text.trim())) {
-            comment = lines[1] ? lines[1].text : '';
-            dataLines = lines.slice(2);
+            const declaredCount = parseInt(lines[0].text.trim(), 10);
+            const remaining = lines.length - 1;
+
+            if (remaining === declaredCount) {
+                // No comment line: count immediately followed by N atom lines.
+                dataLines = lines.slice(1);
+            } else if (remaining - 1 === declaredCount) {
+                // Standard: count, comment, N atom lines.
+                comment = lines[1] ? lines[1].text : '';
+                dataLines = lines.slice(2);
+            } else {
+                // Count doesn't cleanly match either layout (typo'd header,
+                // extra/missing lines, etc.) — fall back to checking whether
+                // line 2 itself looks like a valid "element x y z" atom line;
+                // if so it can't be a comment, so don't consume it as one.
+                const probe = lines[1] ? lines[1].text.trim().split(/\s+/) : [];
+                const looksLikeAtom = probe.length === 4
+                    && elementRe.test(probe[0])
+                    && [probe[1], probe[2], probe[3]].every(v => numberRe.test(v));
+
+                if (looksLikeAtom) {
+                    dataLines = lines.slice(1);
+                } else {
+                    comment = lines[1] ? lines[1].text : '';
+                    dataLines = lines.slice(2);
+                }
+            }
         }
 
         if (dataLines.length === 0) throw new Error('No atom coordinate lines found.');

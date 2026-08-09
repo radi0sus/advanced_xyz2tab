@@ -308,8 +308,11 @@ const Tables = {
                     <div style="margin-bottom:4px"><b>r<sub>eq</sub> (uncorrected):</b> ${est.r0.toFixed(2)} &#8491;
                         <span style="color:var(--text-muted);font-size:12px">(vdW-volume-equivalent sphere radius — a geometric proxy, not the empirical hydrodynamic radius)</span>
                     </div>
-                    <div><b>r<sub>eq</sub> (Perrin-corrected):</b> ${est.rEqCorrected.toFixed(2)} &#8491;
+                    <div style="margin-bottom:4px"><b>r<sub>eq</sub> (Perrin-corrected):</b> ${est.rEqCorrected.toFixed(2)} &#8491;
                         <span style="color:var(--text-muted);font-size:12px">(${est.shape}, p&nbsp;=&nbsp;${est.p.toFixed(2)}, F&nbsp;=&nbsp;${est.F.toFixed(3)})</span>
+                    </div>
+                    <div><b>r<sub>g</sub> (grid-based radius of gyration):</b> ${est.rg.toFixed(2)} &#8491;
+                        <span style="color:var(--text-muted);font-size:12px">→ gyration-based r<sub>e</sub> = ${est.rGyrationEff.toFixed(2)} &#8491; (Miyamoto/Shimono cross-check, independent of Perrin)</span>
                     </div>
                 </div>`;
         }

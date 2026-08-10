@@ -363,8 +363,8 @@ Below the size estimates, the panel predicts a diffusion coefficient `D` at 298.
 
 | Column | Radius/model | Solvent data | Covers CDCl₃? |
 |---|---|---|---|
-| D from r<sub>eq</sub> | bare `r_eq`, plugged directly into Stokes–Einstein | Holz reference viscosities | No |
-| D from r<sub>eq</sub>, Perrin | Perrin-shape-corrected `r_eq` (see above), into Stokes–Einstein | Holz reference viscosities | No |
+| D from r<sub>eq</sub> | bare `r_eq`, plugged directly into Stokes–Einstein | Holz reference viscosities | Yes |
+| D from r<sub>eq</sub>, Perrin | Perrin-shape-corrected `r_eq` (see above), into Stokes–Einstein | Holz reference viscosities | Yes |
 | D<sub>x,norm</sub> | `r_H = a·V_vdW^b`, fitted per-solvent by Urbank & Vondung (2026) | Holz reference viscosities | No |
 | D (SEGWE) | Stokes–Einstein–Gierer–Wirtz Estimation from MW alone (Evans, Dal Poggetto, Nilsson & Morris, 2018) | its own Arrhenius-fitted solvent set | Yes |
 

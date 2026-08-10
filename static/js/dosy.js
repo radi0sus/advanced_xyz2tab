@@ -442,6 +442,15 @@ const Dosy = {
         'THF-d8':     { a: 0.163, b: 0.57,  eta: 0.00048567605047843566, err: 0.11 },
         'C6D6':       { a: 0.112, b: 0.599, eta: 0.0006263140442965048,  err: 0.09 },
         'Toluene-d8': { a: 0.100, b: 0.65,  eta: 0.0005844627740395051,  err: 0.12 },
+        // No Urbank & Vondung fit exists for CDCl3 (a=b=0 is a deliberate
+        // dummy: it forces rHVondung=0 -> dVondung=Infinity below, which the
+        // UI/export layers filter out via Number.isFinite() rather than
+        // showing a bogus value). eta is still real, though, so "D from
+        // r_eq" / "...Perrin" ARE available for CDCl3 — derived from Holz's
+        // protonated CHCl3 viscosity at 298.15 K (0.5426 mPa*s) times the
+        // deuteration ratio eta_r=1.003 (CDCl3/CHCl3) also given by Holz,
+        // i.e. eta(CDCl3) = eta(CHCl3) * 1.003, consistent with how
+        // Urbank & Vondung's own THF-d8/C6D6 values were derived from Holz.
         'CDCl3':      { a: 0.000, b: 0.00,  eta: 0.0005442929550000000,  err: 0.00 },
     },
 

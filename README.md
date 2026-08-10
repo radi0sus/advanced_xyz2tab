@@ -363,14 +363,16 @@ Below the size estimates, the panel predicts a diffusion coefficient `D` at 298.
 
 | Column | Radius/model | Solvent data | Covers CDCl₃? |
 |---|---|---|---|
-| D from r<sub>eq</sub> | bare `r_eq`, plugged directly into Stokes–Einstein | Holz reference viscosities | Yes |
-| D from r<sub>eq</sub>, Perrin | Perrin-shape-corrected `r_eq` (see above), into Stokes–Einstein | Holz reference viscosities | Yes |
+| D from r<sub>eq</sub> | bare `r_eq`, plugged directly into Stokes–Einstein | Holz reference viscosities | Yes* |
+| D from r<sub>eq</sub>, Perrin | Perrin-shape-corrected `r_eq` (see above), into Stokes–Einstein | Holz reference viscosities | Yes* |
 | D<sub>x,norm</sub> | `r_H = a·V_vdW^b`, fitted per-solvent by Urbank & Vondung (2026) | Holz reference viscosities | No |
 | D (SEGWE) | Stokes–Einstein–Gierer–Wirtz Estimation from MW alone (Evans, Dal Poggetto, Nilsson & Morris, 2018) | its own Arrhenius-fitted solvent set | Yes |
 
+\* Urbank & Vondung's own Holz-sourced data doesn't include CDCl3, but Holz's original paper separately lists a protonated-chloroform viscosity plus a deuteration ratio η(CDCl3)/η(CHCl3) = 1.003 — giving η(CDCl3) = 0.5443 mPa·s at 298.15 K by the same route Urbank & Vondung used for their other solvents. This lets the two Stokes–Einstein columns (which only need a viscosity, not a Urbank & Vondung `a`/`b` fit) cover CDCl3 too; `D_x,norm` still can't, since no `a`/`b` coefficients exist for it.
+
 **D from r<sub>eq</sub> / r<sub>eq</sub>,Perrin** are the classical, shape-blind (and shape-corrected) calculations discussed above, shown mainly as a contrast — expect the uncorrected version in particular to run systematically low (e.g. −28% for cyclopentane in THF-d8 against the literature value). The Perrin-corrected column tends to close part of that gap for distinctly elongated/flattened molecules, but does not touch the solvent-size-ratio gap itself (see "Why this isn't called hydrodynamic radius" above) — for compact, near-spherical molecules the two columns are nearly identical.
 
-**D<sub>x,norm</sub>** is the model Urbank & Vondung validate against real DOSY data (9–12% reported error, depending on solvent; the cyclopentane/THF-d8 check above comes out at only −5%). The label matters: `a` and `b` were fitted against their own diffusion coefficients *after* normalization, `Dx,norm = (Dref,fix / Dref) · Dx` — the normalized-diffusion-coefficient method of Neufeld & Stalke (2015, see citations), where `Dx` and `Dref` are the diffusion coefficients of the analyte and an internal reference compound measured together in the same sample, and `Dref,fix` is that reference compound's fixed literature value. This one-reference correction removes run-to-run variation (gradient/temperature calibration etc.) without needing an external, independently-calibrated viscosity for every measurement. Consequently, inverting the fit here predicts `Dx,norm`, not a raw, unnormalized `D` — a raw DOSY measurement of your own compound isn't directly comparable to this column unless you normalize it the same way first (an internal reference in the same sample, per Neufeld & Stalke and Step 3 of Urbank & Vondung's step-by-step guide). CDCl3 is not in Urbank & Vondung's data set, so no coefficients for it are guessed at here — this column is blank for CDCl3.
+**D<sub>x,norm</sub>** is the model Urbank & Vondung validate against real DOSY data (9–12% reported error, depending on solvent; the cyclopentane/THF-d8 check above comes out at only −5%). The label matters: `a` and `b` were fitted against their own diffusion coefficients *after* normalization, `Dx,norm = (Dref,fix / Dref) · Dx` — the normalized-diffusion-coefficient method of Neufeld & Stalke (2015, see citations), where `Dx` and `Dref` are the diffusion coefficients of the analyte and an internal reference compound measured together in the same sample, and `Dref,fix` is that reference compound's fixed literature value. This one-reference correction removes run-to-run variation (gradient/temperature calibration etc.) without needing an external, independently-calibrated viscosity for every measurement. Consequently, inverting the fit here predicts `Dx,norm`, not a raw, unnormalized `D` — a raw DOSY measurement of your own compound isn't directly comparable to this column unless you normalize it the same way first (an internal reference in the same sample, per Neufeld & Stalke and Step 3 of Urbank & Vondung's step-by-step guide). No `a`/`b` fit for CDCl3 exists in their data set, so this column is blank for it.
 
 **D (SEGWE)** (Stokes–Einstein–Gierer–Wirtz Estimation) needs only the molecular weight, not the 3D structure — both solute and an assumed-spherical solvent molecule are reduced to a radius via a generic, MW-only "radius from mass" relationship (fitted across their calibration set, not a real density), then combined through the classical Gierer–Wirtz microviscosity factor `f = [1.5·(r_solvent/r_solute) + (1+r_solvent/r_solute)⁻¹]⁻¹`, `D = kT/(6πf·η·r_solute)`. The paper reports ~15% RMS error overall, and the method is validated for small molecules (<1000 g/mol) containing only light elements (sulfur or lighter) — heavier elements (transition metals, lanthanides/actinides, etc.) are outside its tested range, so treat this column with extra caution for organometallic/coordination complexes. **The SEGWE solvent parameters (molar mass, Arrhenius viscosity `η(T) = A·exp(B/T)`) are entirely separate from the Holz values used in the other three columns** — this is the one column here with access to CDCl3, precisely because it comes with its own, differently-sourced solvent data rather than sharing Urbank & Vondung's.
 
@@ -437,6 +439,13 @@ The `Dx,norm` normalization convention (`Dx,norm = (Dref,fix/Dref)·Dx`) that Ur
 > "Accurate molecular weight determination of small molecules via DOSY-NMR by using external calibration curves with normalized diffusion coefficients",  
 > *Chemical Science* **2015**, *6*, 3354–3364.  
 > https://doi.org/10.1039/C5SC00670H
+
+The Holz reference viscosities (THF-d8, C6D6 directly; CDCl3 via protonated CHCl3 and the deuteration ratio, see above) used for the `D from r_eq` / `r_eq,Perrin` columns, and by Urbank & Vondung for their own fit:
+
+> Manfred Holz, Stefan R. Heil, Antonio Sacco,  
+> "Temperature-dependent self-diffusion coefficients of water and six selected molecular liquids for calibration in accurate 1H NMR PFG measurements",  
+> *Physical Chemistry Chemical Physics* **2000**, *2*, 4740–4742.  
+> https://doi.org/10.1039/B005319H
 
 The `D (SEGWE)` estimate:
 

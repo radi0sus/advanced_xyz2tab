@@ -286,11 +286,11 @@ const Markdown = {
             lines.push('| Solvent | D from r~eq~ | D from r~eq~, Perrin | D~x,norm~ | D (SEGWE) |');
             lines.push('|---|---|---|---|---|');
             const fmtOrDash = value => Number.isFinite(value) ? fmtD(value) : '—';
-            
+
             for (const solvent of allSolvents) {
                 const v = dEst[solvent];
                 const seg = segEst[solvent];
-            
+
                 lines.push(
                     `| ${solventLabel[solvent] || solvent} | ` +
                     `${fmtOrDash(v?.dNaive)} | ` +
@@ -304,7 +304,6 @@ const Markdown = {
         }
 
         lines.push('');
-
 
         // --- Settings / filters ---
         lines.push('## Settings');

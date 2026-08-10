@@ -369,25 +369,35 @@ Viscosities are the Holz reference values used directly in the paper's own suppl
 
 ### Citations
 
-If you use the van der Waals volume, please cite the radii source:
+If you use the van der Waals volume, please cite the radii source, and the algorithm/software it's matched against:
 
 > Santiago Alvarez,  
 > "A cartography of the van der Waals territories",  
 > *Dalton Transactions* **2013**, *42*, 8617–8636.  
 > https://doi.org/10.1039/C3DT50599E
 
-If you use the van der Waals surface area, please cite the area-weight source:
+> Jasmin B. Maglic, Roy Lavendomme,  
+> "MoloVol: an easy-to-use program for analyzing cavities, volumes and surface areas of chemical structures",  
+> *Journal of Applied Crystallography* **2022**, *55*, 1033–1044.  
+> https://doi.org/10.1107/S1600576722004988
+
+If you use the van der Waals surface area, please cite the area-weight source (also as used by MoloVol, above):
 
 > Joakim Lindblad,  
 > "Surface area estimation of digitized 3D objects using weighted local configurations",  
 > *Image and Vision Computing* **2005**, *23*, 111–122.  
 > https://doi.org/10.1016/j.imavis.2004.06.012
 
-The radius of gyration follows the standard IUPAC definition:
+The radius of gyration follows the standard IUPAC definition, matching the convention of OVITO (and LAMMPS/GROMACS, see above):
 
 > IUPAC Gold Book,  
 > "radius of gyration",  
 > https://doi.org/10.1351/goldbook.R05121
+
+> Alexander Stukowski,  
+> "Visualization and analysis of atomistic simulation data with OVITO – the Open Visualization Tool",  
+> *Modelling and Simulation in Materials Science and Engineering* **2010**, *18*, 015012.  
+> https://doi.org/10.1088/0965-0393/18/1/015012
 
 The `D` estimate, the `Vondung` radius model, and background on why a naive Stokes–Einstein hydrodynamic radius from molecular size can be a poor proxy for the DOSY-measured value:
 

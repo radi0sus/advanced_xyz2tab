@@ -288,12 +288,109 @@ const Dosy = {
         return Math.sqrt(s / M);
     },
 
+    // --- Shape (aspect ratio) from the geometric gyration tensor ---
+    // Unweighted atom-center positions (every atom counts equally, not
+    // mass-weighted), but each atom additionally contributes its own vdW
+    // radius isotropically (self-gyration of a uniform sphere = r^2/5),
+    // i.e. the molecule is treated as a union of vdW spheres rather than a
+    // cloud of points. Without this, exactly planar molecules (e.g.
+    // square-planar PtCl4, or any perfectly flat ring system) would have a
+    // zero eigenvalue perpendicular to the plane and an (unphysically)
+    // infinitely thin equivalent ellipsoid, blowing up the Perrin factor.
+    // For a uniform ellipsoid with semi-axes (a,b,c), the gyration-tensor
+    // eigenvalue along an axis equals (semi-axis)^2 / 5, so the ratio of the
+    // axial to the (averaged) equatorial eigenvalue, square rooted, is
+    // exactly the Perrin aspect ratio p = axial/equatorial — independent of
+    // the 1/5 constant and of absolute size.
+    calcAspectRatio(atoms) {
+        const n = atoms.length;
+        if (n < 2) return { p: 1, shape: 'sphere' };
+
+        let cx = 0, cy = 0, cz = 0;
+        for (const a of atoms) { cx += a.x; cy += a.y; cz += a.z; }
+        cx /= n; cy /= n; cz /= n;
+
+        let xx = 0, yy = 0, zz = 0, xy = 0, xz = 0, yz = 0;
+        for (const a of atoms) {
+            const dx = a.x - cx, dy = a.y - cy, dz = a.z - cz;
+            const rSelf2 = Parser.getVdwRadius(a.element) ** 2 / 5;
+            xx += dx * dx + rSelf2; yy += dy * dy + rSelf2; zz += dz * dz + rSelf2;
+            xy += dx * dy; xz += dx * dz; yz += dy * dz;
+        }
+        xx /= n; yy /= n; zz /= n; xy /= n; xz /= n; yz /= n;
+
+        const { values } = Chem._jacobi3x3([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]]);
+        const sorted = [...values].sort((a, b) => b - a).map(v => Math.max(v, 0));
+        const [l1, l2, l3] = sorted;
+
+        const d12 = l1 - l2, d23 = l2 - l3;
+        let shape, lAx, lEq;
+        if (d23 <= d12) {
+            // The two smaller eigenvalues are closer together -> those two
+            // form the equatorial plane, the largest is the unique (longer)
+            // axis -> prolate (cigar-shaped).
+            shape = 'prolate'; lAx = l1; lEq = (l2 + l3) / 2;
+        } else {
+            // The two larger eigenvalues are closer together -> those two
+            // form the (longer) equatorial plane, the smallest is the
+            // unique (shorter) axis -> oblate (disc-shaped).
+            shape = 'oblate'; lAx = l3; lEq = (l1 + l2) / 2;
+        }
+
+        const p = lEq > 1e-10 ? Math.sqrt(lAx / lEq) : 1;
+        return { p, shape };
+    },
+
+    // --- Perrin translational shape factor F(p) = f/f0 ---
+    // f0 = friction of a sphere of the same volume; F is size-independent,
+    // a function of the aspect ratio p alone. Derived from the exact
+    // Kim & Karrila (1991, Table 3.4/3.6) resistance functions for prolate/
+    // oblate spheroids, orientation-averaged as D_avg = (D_par + 2 D_perp)/3
+    // (the isotropic average relevant for a freely tumbling molecule in
+    // solution, as used e.g. in Ortega & Garcia de la Torre's treatments).
+    calcPerrinFactor(p) {
+        if (!isFinite(p) || Math.abs(p - 1) < 1e-3) return 1;
+
+        if (p > 1) {
+            // Prolate: axial semi-axis c = p * a (equatorial), e = eccentricity.
+            const e = Math.sqrt(1 - 1 / (p * p));
+            const e3 = e * e * e;
+            const L = Math.log((1 + e) / (1 - e));
+
+            const muPar = (3 / 8) * (-2 * e + (1 + e * e) * L) / e3;
+            const muPerp = (3 / 16) * (2 * e + (3 * e * e - 1) * L) / e3;
+            const gPar = 1 / muPar, gPerp = 1 / muPerp;
+
+            // Equivalent-sphere radius r0, in units of the axial semi-axis c:
+            // volume = (4/3)pi a^2 c = (4/3)pi c^3 / p^2  =>  r0 = c / p^(2/3)
+            const g0 = 1 / Math.pow(p, 2 / 3);
+
+            const gEff = 3 / (1 / gPar + 2 / gPerp);
+            return gEff / g0;
+        }
+
+        // Oblate: r = p = c/a < 1 (c = axial/short, a = equatorial/long).
+        const r = p;
+        const s = Math.sqrt(1 - r * r);
+        const acot = Math.atan(s / r); // arccot(r/s)
+
+        const Fpar = Math.pow(r, -1 / 3) * ((4 / 3) * s ** 3) / ((1 - 2 * r * r) * acot + r * s);
+        const Fperp = Math.pow(r, -1 / 3) * ((8 / 3) * s ** 3) / ((3 - 2 * r * r) * acot - r * s);
+
+        // Here ζ0 = 6πηL already equals the sphere-of-same-volume friction
+        // by construction (Kim & Karrila's constant-volume normalisation),
+        // so Fpar/Fperp are already ζ/ζ0 — no separate g0 division needed.
+        return 3 / (1 / Fpar + 2 / Fperp);
+    },
+
     // --- Combined DOSY estimate ---
     // No exclusions: always uses every atom in the currently loaded file.
     calcEstimate(atoms) {
         const { volume, surfaceArea, gridSpacing } = this.calcVdwVolume(atoms);
         const r0 = Math.cbrt((3 * volume) / (4 * Math.PI));
         const rg = this.calcRadiusOfGyration(atoms);
+        const { p, shape } = this.calcAspectRatio(atoms);
+        const F = this.calcPerrinFactor(p);
 
         return {
             volume,
@@ -301,33 +398,46 @@ const Dosy = {
             gridSpacing,
             r0,
             rg,
+            p,
+            shape,
+            F,
+            rPerrin: F * r0,
         };
     },
 
-    // --- Diffusion coefficient estimates ---
-    // Two independent routes to a predicted D, both from the same vdW
-    // volume, for exactly the three solvents Urbank & Vondung (2026,
-    // Chem. Eur. J., e71471) fitted their semiempirical model for — CDCl3
-    // is not covered by their data set, so it is deliberately not offered
-    // here rather than guessed at.
+    // --- Diffusion coefficient estimates (Urbank & Vondung route) ---
+    // Two/three routes to a predicted D, all from the same vdW volume, for
+    // exactly the three solvents Urbank & Vondung (2026, Chem. Eur. J.,
+    // e71471) fitted their semiempirical model for — CDCl3 is not covered
+    // by their data set, so no coefficients for it are guessed at here
+    // (it's available via the separate SEGWE route below instead).
     //
-    //   naive:    plug r_eq (the bare vdW-volume-equivalent sphere radius)
-    //             directly into Stokes-Einstein. This is the classical,
-    //             shape/solvation-blind approach discussed at length in the
-    //             README, and is included mainly as a contrast — expect it
-    //             to run systematically low (see the cyclopentane/THF-d8
-    //             and anthracene cross-checks in the README).
-    //   vondung:  first predict the empirical hydrodynamic radius via the
-    //             paper's fitted power law rH = a * VvdW^b (solvent- and
-    //             fit-specific a, b), THEN apply Stokes-Einstein to that.
-    //             This is the approach the paper itself validates against
-    //             real DOSY data, with the "err" fraction below being their
-    //             own reported relative error for that solvent.
+    //   r_eq:      plug r_eq (the bare vdW-volume-equivalent sphere radius)
+    //              directly into Stokes-Einstein. This is the classical,
+    //              shape/solvation-blind approach discussed at length in the
+    //              README, and is included mainly as a contrast — expect it
+    //              to run systematically low (see the cyclopentane/THF-d8
+    //              and anthracene cross-checks in the README).
+    //   r_eq,Perrin: same, but with r_eq scaled by the Perrin shape factor
+    //              F(p) first (see calcPerrinFactor). Corrects for
+    //              anisotropy only, not for the solvation/continuum gap —
+    //              tends to help most for distinctly elongated/flattened
+    //              molecules.
+    //   vondung:   first predict the empirical hydrodynamic radius via the
+    //              paper's fitted power law rH = a * VvdW^b (solvent- and
+    //              fit-specific a, b), THEN apply Stokes-Einstein to that.
+    //              This is the approach the paper itself validates against
+    //              real DOSY data, with the "err" fraction below being
+    //              their own reported relative error for that solvent. The
+    //              predicted quantity is Dx,norm (Urbank & Vondung's own
+    //              Stalke-normalized D, see README), not a raw D.
     //
     // Viscosities (eta, Pa*s) are Holz reference values, exactly as used by
     // the paper's own calculator spreadsheet — reusing them (rather than a
-    // different literature source) keeps the naive/vondung comparison an
-    // apples-to-apples test of the radius model, not the viscosity source.
+    // different literature source) keeps the r_eq/Perrin/vondung comparison
+    // an apples-to-apples test of the radius model, not the viscosity
+    // source. These are deliberately NOT shared with the SEGWE solvent data
+    // below, which uses its own, differently-sourced solvent parameters.
     solventParams: {
         'THF-d8':     { a: 0.163, b: 0.57,  eta: 0.00048567605047843566, err: 0.11 },
         'C6D6':       { a: 0.112, b: 0.599, eta: 0.0006263140442965048,  err: 0.09 },
@@ -337,13 +447,56 @@ const Dosy = {
     kB: 1.380649e-23, // J/K
     T_DEFAULT: 298.15, // K — fixed, matching the typical DOSY measurement temperature
 
-    calcDiffusionEstimates(volume, rEq) {
+    calcDiffusionEstimates(volume, rEq, rPerrin) {
         const results = {};
         for (const [solvent, p] of Object.entries(this.solventParams)) {
             const rHVondung = p.a * Math.pow(volume, p.b); // Å
             const dVondung = this.kB * this.T_DEFAULT / (6 * Math.PI * p.eta * rHVondung * 1e-10);
             const dNaive = this.kB * this.T_DEFAULT / (6 * Math.PI * p.eta * rEq * 1e-10);
-            results[solvent] = { rHVondung, dVondung, dNaive, err: p.err };
+            const dPerrin = this.kB * this.T_DEFAULT / (6 * Math.PI * p.eta * rPerrin * 1e-10);
+            results[solvent] = { rHVondung, dVondung, dNaive, dPerrin, err: p.err };
+        }
+        return results;
+    },
+
+    // --- Diffusion coefficient estimate (SEGWE route) ---
+    // Stokes-Einstein-Gierer-Wirtz Estimation: Evans, Dal Poggetto, Nilsson
+    // & Morris (2018, see README citations). Needs only the molecular
+    // weight (not the 3D structure at all) — both solute and solvent are
+    // reduced to a "radius from MW" via an assumed generic molecular
+    // density, then corrected for their size mismatch via the classical
+    // Gierer-Wirtz microviscosity factor. Solvent data (molar mass and
+    // Arrhenius viscosity parameters A, B with eta(T) = A*exp(B/T)) are
+    // copied from the method's own reference spreadsheet and are entirely
+    // separate from the Holz values used above — do not mix the two.
+    segweSolvents: {
+        'CDCl3':      { mw: 120.38, A: 2.860296998215918e-05, B: 877.553 },
+        'THF-d8':     { mw: 80.16,  A: 2.207863851312019e-05, B: 930.4 },
+        'C6D6':       { mw: 84.15,  A: 9.455632143229191e-06, B: 1256.41 },
+        'Toluene-d8': { mw: 100.19, A: 1.5038454560622864e-05, B: 1099.36 },
+    },
+
+    // Generic assumed molecular density (same constant used for both
+    // solute and solvent "radius from MW" in the reference spreadsheet) —
+    // not a real physical density, just the fitted proportionality that
+    // makes the MW-only radius estimate work across their calibration set.
+    _segweGenericDensity: 627, // kg/m^3 (as used in the source spreadsheet)
+
+    _segweRadiusFromMw(mwGmol) {
+        const V = (mwGmol * 0.001) / (6.022e23 * this._segweGenericDensity); // m^3
+        return Math.cbrt(3 * V / (4 * Math.PI)); // m
+    },
+
+    calcSegweEstimate(mwGmol) {
+        const rSolute = this._segweRadiusFromMw(mwGmol);
+        const results = {};
+        for (const [solvent, p] of Object.entries(this.segweSolvents)) {
+            const rSolvent = this._segweRadiusFromMw(p.mw);
+            const eta = p.A * Math.exp(p.B / this.T_DEFAULT);
+            const alpha = rSolvent / rSolute;
+            const fGW = 1 / (1.5 * alpha + 1 / (1 + alpha));
+            const d = this.kB * this.T_DEFAULT / (6 * Math.PI * fGW * eta * rSolute);
+            results[solvent] = { d };
         }
         return results;
     },

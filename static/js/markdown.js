@@ -249,21 +249,26 @@ const Markdown = {
             lines.push(`**Van der Waals volume:** ${est.volume.toFixed(3)} Å³ (voxel grid, Alvarez 2013 radii, ${est.gridSpacing.toFixed(3)} Å spacing — matches MoloVol)  `);
             lines.push(`**Van der Waals surface area:** ${est.surfaceArea.toFixed(3)} Å² (marching cubes on the same grid, Lindblad 2005 area weights — matches MoloVol)  `);
             lines.push(`**r_eq (uncorrected):** ${est.r0.toFixed(3)} Å (vdW-volume-equivalent sphere radius — a geometric proxy, not the empirical hydrodynamic radius)  `);
+            lines.push(`**r_eq (Perrin-corrected):** ${est.rPerrin.toFixed(3)} Å (${est.shape}, p = ${est.p.toFixed(3)}, F = ${est.F.toFixed(3)})  `);
             lines.push(`**r_g (radius of gyration):** ${est.rg.toFixed(3)} Å (mass-weighted, atom positions — IUPAC definition, matches LAMMPS/GROMACS/OVITO)`);
             lines.push('');
 
-            const dEst = Dosy.calcDiffusionEstimates(est.volume, est.r0);
+            const dEst = Dosy.calcDiffusionEstimates(est.volume, est.r0, est.rPerrin);
+            const segEst = Dosy.calcSegweEstimate(fw);
             const fmtD = d => (d * 1e9).toFixed(3);
-            const solventLabel = { 'THF-d8': 'THF-d' + Format.subscriptNumber(8), 'C6D6': 'Benzene-d' + Format.subscriptNumber(6), 'Toluene-d8': 'Toluene-d' + Format.subscriptNumber(8) };
-            lines.push('**D estimate** (298.15 K; solvents and coefficients from Urbank & Vondung, 2026):');
+            const solventLabel = { 'THF-d8': 'THF-d' + Format.subscriptNumber(8), 'C6D6': 'Benzene-d' + Format.subscriptNumber(6), 'Toluene-d8': 'Toluene-d' + Format.subscriptNumber(8), 'CDCl3': 'CDCl' + Format.subscriptNumber(3) };
+            const allSolvents = ['THF-d8', 'C6D6', 'Toluene-d8', 'CDCl3'];
+            lines.push('**D estimate** (298.15 K; all values in 10⁻⁹ m²·s⁻¹):');
             lines.push('');
-            lines.push('| Solvent | D from r_eq / 10⁻⁹ m²·s⁻¹ | D_x,norm / 10⁻⁹ m²·s⁻¹ |');
-            lines.push('|---|---|---|');
-            for (const [solvent, v] of Object.entries(dEst)) {
-                lines.push(`| ${solventLabel[solvent] || solvent} | ${fmtD(v.dNaive)} | ${fmtD(v.dVondung)} ±${(v.err * 100).toFixed(0)}% |`);
+            lines.push('| Solvent | D from r_eq | D from r_eq, Perrin | D_x,norm | D (SEGWE) |');
+            lines.push('|---|---|---|---|---|');
+            for (const solvent of allSolvents) {
+                const v = dEst[solvent];
+                const seg = segEst[solvent];
+                lines.push(`| ${solventLabel[solvent] || solvent} | ${v ? fmtD(v.dNaive) : '—'} | ${v ? fmtD(v.dPerrin) : '—'} | ${v ? fmtD(v.dVondung) : '—'} | ${seg ? fmtD(seg.d) : '—'} |`);
             }
             lines.push('');
-            lines.push('"D from r_eq" plugs r_eq directly into Stokes–Einstein and is shown for contrast — expect it to run systematically low. "D_x,norm" predicts r_H = a·V_vdW^b first, then applies Stokes–Einstein — this corresponds to a Stalke-normalized diffusion coefficient (see README), not a raw measured D; the ± error is the paper\'s own reported value for that solvent.');
+            lines.push('"D from r_eq" / "...Perrin" plug r_eq (uncorrected / Perrin-shape-corrected) directly into Stokes–Einstein, using Holz reference viscosities. "D_x,norm" and "D (SEGWE)" are two independent semiempirical models (Urbank & Vondung, 2026; Evans et al., 2018) with their own solvent parameters — see README for details, error estimates, and why "D_x,norm" is not a raw measured D.');
         }
 
         lines.push('');

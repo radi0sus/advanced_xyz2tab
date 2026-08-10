@@ -311,28 +311,39 @@ const Tables = {
                     <div style="margin-bottom:4px"><b>r<sub>eq</sub> (uncorrected):</b> ${est.r0.toFixed(3)} &#8491;
                         <span style="color:var(--text-muted);font-size:12px">(vdW-volume-equivalent sphere radius — a geometric proxy, not the empirical hydrodynamic radius)</span>
                     </div>
+                    <div style="margin-bottom:4px"><b>r<sub>eq</sub> (Perrin-corrected):</b> ${est.rPerrin.toFixed(3)} &#8491;
+                        <span style="color:var(--text-muted);font-size:12px">(${est.shape}, p&nbsp;=&nbsp;${est.p.toFixed(3)}, F&nbsp;=&nbsp;${est.F.toFixed(3)})</span>
+                    </div>
                     <div><b>r<sub>g</sub> (radius of gyration):</b> ${est.rg.toFixed(3)} &#8491;
                         <span style="color:var(--text-muted);font-size:12px">(mass-weighted, atom positions — IUPAC definition, matches LAMMPS/GROMACS/OVITO)</span>
                     </div>
                 </div>`;
 
-            const dEst = Dosy.calcDiffusionEstimates(est.volume, est.r0);
+            const dEst = Dosy.calcDiffusionEstimates(est.volume, est.r0, est.rPerrin);
+            const segEst = Dosy.calcSegweEstimate(fw);
             const fmtD = d => (d * 1e9).toFixed(3);
-            const solventLabel = { 'THF-d8': 'THF-d' + Format.subscriptNumber(8), 'C6D6': 'Benzene-d' + Format.subscriptNumber(6), 'Toluene-d8': 'Toluene-d' + Format.subscriptNumber(8) };
+            const solventLabel = { 'THF-d8': 'THF-d' + Format.subscriptNumber(8), 'C6D6': 'Benzene-d' + Format.subscriptNumber(6), 'Toluene-d8': 'Toluene-d' + Format.subscriptNumber(8), 'CDCl3': 'CDCl' + Format.subscriptNumber(3) };
+            const allSolvents = ['THF-d8', 'C6D6', 'Toluene-d8', 'CDCl3'];
             let dRows = '';
-            for (const [solvent, v] of Object.entries(dEst)) {
-                dRows += `<tr><td>${solventLabel[solvent] || solvent}</td><td>${fmtD(v.dNaive)}</td><td>${fmtD(v.dVondung)} &plusmn;${(v.err * 100).toFixed(0)}%</td></tr>`;
+            for (const solvent of allSolvents) {
+                const v = dEst[solvent];
+                const seg = segEst[solvent];
+                dRows += `<tr><td>${solventLabel[solvent] || solvent}</td>` +
+                    `<td>${v ? fmtD(v.dNaive) : '&mdash;'}</td>` +
+                    `<td>${v ? fmtD(v.dPerrin) : '&mdash;'}</td>` +
+                    `<td>${v ? fmtD(v.dVondung) : '&mdash;'}</td>` +
+                    `<td>${seg ? fmtD(seg.d) : '&mdash;'}</td></tr>`;
             }
             dosyHtml += `
                 <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border-color, #444)">
                     <div style="margin-bottom:4px"><b>D estimate</b>
-                        <span style="color:var(--text-muted);font-size:12px">(298.15 K; solvents and coefficients from Urbank &amp; Vondung, 2026)</span>
+                        <span style="color:var(--text-muted);font-size:12px">(298.15 K)</span>
                     </div>
                     <table class="data-table">
-                        <thead><tr><th>Solvent</th><th>D from r<sub>eq</sub> / 10&#8315;&#8313; m&sup2;&middot;s&#8315;&sup1;</th><th>D<sub>x,norm</sub> / 10&#8315;&#8313; m&sup2;&middot;s&#8315;&sup1;</th></tr></thead>
+                        <thead><tr><th>Solvent</th><th>D from r<sub>eq</sub></th><th>D from r<sub>eq</sub>, Perrin</th><th>D<sub>x,norm</sub></th><th>D (SEGWE)</th></tr></thead>
                         <tbody>${dRows}</tbody>
                     </table>
-                    <div style="margin-top:4px;color:var(--text-muted);font-size:12px">"D from r<sub>eq</sub>" plugs r<sub>eq</sub> directly into Stokes&ndash;Einstein and is shown for contrast &mdash; expect it to run systematically low. "D<sub>x,norm</sub>" predicts r<sub>H</sub> = a&middot;V<sub>vdW</sub><sup>b</sup> first, then applies Stokes&ndash;Einstein &mdash; this corresponds to a Stalke-normalized diffusion coefficient (see README), not a raw measured D; &plusmn;error is the paper's own reported value for that solvent.</div>
+                    <div style="margin-top:4px;color:var(--text-muted);font-size:12px">All values in 10&#8315;&#8313; m&sup2;&middot;s&#8315;&sup1;. "D from r<sub>eq</sub>" / "...Perrin" plug r<sub>eq</sub> (uncorrected / Perrin-shape-corrected) directly into Stokes&ndash;Einstein, using Holz reference viscosities. "D<sub>x,norm</sub>" and "D (SEGWE)" are two independent semiempirical models (Urbank &amp; Vondung, 2026; Evans et al., 2018) with their own solvent parameters — see README for details, error estimates, and why "D<sub>x,norm</sub>" is not a raw measured D.</div>
                 </div>`;
         }
 

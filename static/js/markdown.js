@@ -262,10 +262,19 @@ const Markdown = {
             lines.push('');
             lines.push('| Solvent | D from r_eq | D from r_eq, Perrin | D_x,norm | D (SEGWE) |');
             lines.push('|---|---|---|---|---|');
+            const fmtOrDash = value => Number.isFinite(value) ? fmtD(value) : '—';
+            
             for (const solvent of allSolvents) {
                 const v = dEst[solvent];
                 const seg = segEst[solvent];
-                lines.push(`| ${solventLabel[solvent] || solvent} | ${v ? fmtD(v.dNaive) : '—'} | ${v ? fmtD(v.dPerrin) : '—'} | ${v ? fmtD(v.dVondung) : '—'} | ${seg ? fmtD(seg.d) : '—'} |`);
+            
+                lines.push(
+                    `| ${solventLabel[solvent] || solvent} | ` +
+                    `${fmtOrDash(v?.dNaive)} | ` +
+                    `${fmtOrDash(v?.dPerrin)} | ` +
+                    `${fmtOrDash(v?.dVondung)} | ` +
+                    `${fmtOrDash(seg?.d)} |`
+                );
             }
             lines.push('');
             lines.push('"D from r_eq" / "...Perrin" plug r_eq (uncorrected / Perrin-shape-corrected) directly into Stokes–Einstein, using Holz reference viscosities. "D_x,norm" and "D (SEGWE)" are two independent semiempirical models (Urbank & Vondung, 2026; Evans et al., 2018) with their own solvent parameters — see README for details, error estimates, and why "D_x,norm" is not a raw measured D.');

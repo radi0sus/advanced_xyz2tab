@@ -328,22 +328,24 @@ const Tables = {
             for (const solvent of allSolvents) {
                 const v = dEst[solvent];
                 const seg = segEst[solvent];
+                const fmtOrDash = value => Number.isFinite(value) ? fmtD(value) : '&mdash;';
+                
                 dRows += `<tr><td>${solventLabel[solvent] || solvent}</td>` +
-                    `<td>${v ? fmtD(v.dNaive) : '&mdash;'}</td>` +
-                    `<td>${v ? fmtD(v.dPerrin) : '&mdash;'}</td>` +
-                    `<td>${v ? fmtD(v.dVondung) : '&mdash;'}</td>` +
-                    `<td>${seg ? fmtD(seg.d) : '&mdash;'}</td></tr>`;
+                    `<td>${fmtOrDash(v?.dNaive)}</td>` +
+                    `<td>${fmtOrDash(v?.dPerrin)}</td>` +
+                    `<td>${fmtOrDash(v?.dVondung)}</td>` +
+                    `<td>${fmtOrDash(seg?.d)}</td></tr>`;
             }
             dosyHtml += `
                 <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border-color, #444)">
                     <div style="margin-bottom:4px"><b>D estimate</b>
-                        <span style="color:var(--text-muted);font-size:12px">(298.15 K)</span>
+                        <span style="color:var(--text-muted);font-size:12px">(298.15 K, all values in 10&#8315;&#8313; m&sup2;&middot;s&#8315;&sup1;)</span>
                     </div>
                     <table class="data-table">
                         <thead><tr><th>Solvent</th><th>D from r<sub>eq</sub></th><th>D from r<sub>eq</sub>, Perrin</th><th>D<sub>x,norm</sub></th><th>D (SEGWE)</th></tr></thead>
                         <tbody>${dRows}</tbody>
                     </table>
-                    <div style="margin-top:4px;color:var(--text-muted);font-size:12px">All values in 10&#8315;&#8313; m&sup2;&middot;s&#8315;&sup1;. "D from r<sub>eq</sub>" / "...Perrin" plug r<sub>eq</sub> (uncorrected / Perrin-shape-corrected) directly into Stokes&ndash;Einstein, using Holz reference viscosities. "D<sub>x,norm</sub>" and "D (SEGWE)" are two independent semiempirical models (Urbank &amp; Vondung, 2026; Evans et al., 2018) with their own solvent parameters — see README for details, error estimates, and why "D<sub>x,norm</sub>" is not a raw measured D.</div>
+                    <div style="margin-top:4px;color:var(--text-muted);font-size:12px">"D from r<sub>eq</sub>" / "...Perrin" plug r<sub>eq</sub> (uncorrected / Perrin-shape-corrected) directly into Stokes&ndash;Einstein, using Holz reference viscosities. "D<sub>x,norm</sub>" and "D (SEGWE)" are two independent semiempirical models (Urbank &amp; Vondung, 2026; Evans et al., 2018) with their own solvent parameters — see README for details, error estimates, and why "D<sub>x,norm</sub>" is not a raw measured D.</div>
                 </div>`;
         }
 

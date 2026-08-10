@@ -281,7 +281,7 @@ const Markdown = {
             const fmtD = d => (d * 1e9).toFixed(3);
             const solventLabel = { 'THF-d8': 'THF-d' + Format.subscriptNumber(8), 'C6D6': 'Benzene-d' + Format.subscriptNumber(6), 'Toluene-d8': 'Toluene-d' + Format.subscriptNumber(8), 'CDCl3': 'CDCl' + Format.subscriptNumber(3) };
             const allSolvents = ['THF-d8', 'C6D6', 'Toluene-d8', 'CDCl3'];
-            lines.push('**D estimate** (298.15 K; all values in 10⁻⁹ m²·s⁻¹):');
+            lines.push('**Diffusion coefficient (D) estimate** (298.15 K; all values in 10⁻⁹ m²·s⁻¹):');
             lines.push('');
             lines.push('| Solvent | D from r~eq~ | D from r~eq~, Perrin | D~x,norm~ | D (SEGWE) |');
             lines.push('|---|---|---|---|---|');

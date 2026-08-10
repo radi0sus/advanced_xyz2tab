@@ -338,7 +338,7 @@ const Tables = {
             }
             dosyHtml += `
                 <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border-color, #444)">
-                    <div style="margin-bottom:4px"><b>D estimate</b>
+                    <div style="margin-bottom:4px"><b>Diffusion coefficient (D) estimate</b>
                         <span style="color:var(--text-muted);font-size:12px">(298.15 K, all values in 10&#8315;&#8313; m&sup2;&middot;s&#8315;&sup1;)</span>
                     </div>
                     <table class="data-table">

@@ -1157,7 +1157,8 @@ th.sortable-th.sorted .sort-indicator {
 #angles-table-wrap .data-table td:nth-child(5),
 #manual-distances-wrap .data-table td:nth-child(3),
 #manual-angles-wrap .data-table td:nth-child(3),
-#manual-dihedrals-wrap .data-table td:nth-child(3) {
+#manual-dihedrals-wrap .data-table td:nth-child(3),
+#info-table-wrap .data-table td:not(:first-child) {
     font-weight: 650;
     color: var(--text);
 }

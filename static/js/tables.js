@@ -303,7 +303,10 @@ const Tables = {
             dosyHtml = `
                 <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border-color, #444)">
                     <div style="margin-bottom:4px"><b>Van der Waals volume:</b> ${est.volume.toFixed(3)} &#8491;&sup3;
-                        <span style="color:var(--text-muted);font-size:12px">(voxel grid, Alvarez 2013 radii, ${est.gridSpacing.toFixed(3)} &#8491; spacing)</span>
+                        <span style="color:var(--text-muted);font-size:12px">(voxel grid, Alvarez 2013 radii, ${est.gridSpacing.toFixed(3)} &#8491; spacing — matches MoloVol)</span>
+                    </div>
+                    <div style="margin-bottom:4px"><b>Van der Waals surface area:</b> ${est.surfaceArea.toFixed(3)} &#8491;&sup2;
+                        <span style="color:var(--text-muted);font-size:12px">(marching cubes on the same grid, Lindblad 2005 area weights — matches MoloVol)</span>
                     </div>
                     <div style="margin-bottom:4px"><b>r<sub>eq</sub> (uncorrected):</b> ${est.r0.toFixed(3)} &#8491;
                         <span style="color:var(--text-muted);font-size:12px">(vdW-volume-equivalent sphere radius — a geometric proxy, not the empirical hydrodynamic radius)</span>

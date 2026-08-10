@@ -34,7 +34,7 @@ No installation and no Python environment are required for normal use.
   - manual distances
   - manual angles
   - manual dihedrals
-  - DOSY-related size estimates: van der Waals volume, equivalent-sphere radius (r_eq — a geometric proxy, not the empirical hydrodynamic radius), and standard radius of gyration (r_g)
+  - DOSY-related size estimates: van der Waals volume and surface area, equivalent-sphere radius (r_eq — a geometric proxy, not the empirical hydrodynamic radius), and standard radius of gyration (r_g)
 - Adjustable covalent-radius tolerance for automatic bond detection
 - Manual graph-active bonds
 - Atom-wise exclusion from analysis
@@ -341,6 +341,7 @@ Rather than a strict yes/no test, every candidate symmetry element (rotation axi
 The `Molecular information` panel additionally shows size estimates relevant for DOSY (diffusion-ordered NMR spectroscopy), computed from every atom of the currently loaded structure (exclusions are not applied here):
 
 - **Van der Waals volume** — the volume of the union of atomic van der Waals spheres, computed on a voxel grid (default spacing 0.2 Å, automatically coarsened for very large/spread-out structures to keep memory bounded). Atomic radii are taken from Alvarez (2013), the same default radii set used by [MoloVol](https://molovol.com); the grid boundary padding, origin alignment, and voxel classification follow MoloVol's algorithm directly (see its `space.cpp`/`voxel.cpp`), so results match a MoloVol calculation at the same grid resolution.
+- **Van der Waals surface area** — the surface area of that same voxelized shape, via marching cubes on the identical grid: each 2×2×2 neighborhood of voxel centers ("m-cube") is classified into one of 256 solid/empty configurations, mapped to one of 15 area-contribution weights, and summed. The 256→15 lookup table and its semi-empirical weights are copied from MoloVol's own `SurfaceLUT` (`space.cpp`), so results match MoloVol at the same grid resolution here too.
 - **r<sub>eq</sub>** — the radius of a sphere with the same volume as the van der Waals volume, `r0 = (3V/4π)^(1/3)`. This is a purely geometric quantity, deliberately *not* called "r_H" or "hydrodynamic radius": it is not calibrated against, or derived from, any diffusion measurement — it only says how big the bare, solvent-free molecule is.
 - **r<sub>g</sub> (radius of gyration)** — the standard, mass-weighted radius of gyration computed from atom positions, `Rg² = (1/M)·Σ mᵢ|rᵢ−r_cm|²` (IUPAC Gold Book definition; matches LAMMPS' `compute_gyration`, GROMACS' `gmx gyrate`, and OVITO). Shown as an independent, easily externally-verified geometric reference value alongside `r_eq`. Note that plugging `Rg` itself into Stokes–Einstein is not appropriate: `Rg` measures where the atomic nuclei sit, not the van der Waals surface the solvent actually has to move around, and comes out noticeably smaller than `r_eq` as a result.
 
@@ -374,6 +375,13 @@ If you use the van der Waals volume, please cite the radii source:
 > "A cartography of the van der Waals territories",  
 > *Dalton Transactions* **2013**, *42*, 8617–8636.  
 > https://doi.org/10.1039/C3DT50599E
+
+If you use the van der Waals surface area, please cite the area-weight source:
+
+> Joakim Lindblad,  
+> "Surface area estimation of digitized 3D objects using weighted local configurations",  
+> *Image and Vision Computing* **2005**, *23*, 111–122.  
+> https://doi.org/10.1016/j.imavis.2004.06.012
 
 The radius of gyration follows the standard IUPAC definition:
 

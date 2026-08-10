@@ -246,7 +246,8 @@ const Markdown = {
 
         if (typeof Dosy !== 'undefined' && atoms.length >= 2) {
             const est = Dosy.calcEstimate(atoms);
-            lines.push(`**Van der Waals volume:** ${est.volume.toFixed(3)} Å³ (voxel grid, Alvarez 2013 radii, ${est.gridSpacing.toFixed(3)} Å spacing)  `);
+            lines.push(`**Van der Waals volume:** ${est.volume.toFixed(3)} Å³ (voxel grid, Alvarez 2013 radii, ${est.gridSpacing.toFixed(3)} Å spacing — matches MoloVol)  `);
+            lines.push(`**Van der Waals surface area:** ${est.surfaceArea.toFixed(3)} Å² (marching cubes on the same grid, Lindblad 2005 area weights — matches MoloVol)  `);
             lines.push(`**r_eq (uncorrected):** ${est.r0.toFixed(3)} Å (vdW-volume-equivalent sphere radius — a geometric proxy, not the empirical hydrodynamic radius)  `);
             lines.push(`**r_g (radius of gyration):** ${est.rg.toFixed(3)} Å (mass-weighted, atom positions — IUPAC definition, matches LAMMPS/GROMACS/OVITO)`);
             lines.push('');

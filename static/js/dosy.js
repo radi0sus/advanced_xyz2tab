@@ -209,13 +209,61 @@ const Dosy = {
         for (let i = 0; i < grid.length; i++) {
             count += grid[i];
         }
-    
+
+        /*
+         * MoloVol's surface area: marching cubes over the SAME voxel grid
+         * (a voxel's "type" here is just our solid/1 vs. empty/0), using the
+         * semi-empirical per-configuration area weights of Lindblad (2005,
+         * Image and Vision Computing 23, 111-122) — the exact lookup table
+         * MoloVol itself uses (see space.cpp, SurfaceLUT). Each "m-cube" is
+         * bounded by 8 neighboring voxel centers; its 8 solid/empty states
+         * are packed into a config byte with bit = z + 2y + 4x (x,y,z in
+         * {0,1}), mapped through a 256->15 "type" table, then to an area
+         * contribution for that type. Total surface = sum(contributions) *
+         * grid_size^2. Voxels outside the grid never occur here because the
+         * same boundary padding used for the volume grid already guarantees
+         * every cube touching the grid edge is entirely empty.
+         */
+        let surface = 0;
+        for (let ix = 0; ix < nx - 1; ix++) {
+            for (let iy = 0; iy < ny - 1; iy++) {
+                const base = ix * strideX + iy * strideY;
+                const baseX = (ix + 1) * strideX + iy * strideY;
+                const baseY = ix * strideX + (iy + 1) * strideY;
+                const baseXY = (ix + 1) * strideX + (iy + 1) * strideY;
+                for (let iz = 0; iz < nz - 1; iz++) {
+                    // bit = z + 2y + 4x, for (x,y,z) corner offsets in {0,1}
+                    const config =
+                        (grid[base + iz]) |
+                        (grid[base + iz + 1] << 1) |
+                        (grid[baseY + iz] << 2) |
+                        (grid[baseY + iz + 1] << 3) |
+                        (grid[baseX + iz] << 4) |
+                        (grid[baseX + iz + 1] << 5) |
+                        (grid[baseXY + iz] << 6) |
+                        (grid[baseXY + iz + 1] << 7);
+                    if (config === 0 || config === 255) continue; // fully empty or fully solid: no local surface
+                    surface += this._surfaceAreaByType[this._surfaceConfigToType[config]];
+                }
+            }
+        }
+        surface *= h * h;
+
         return {
             volume: count * h * h * h,
+            surfaceArea: surface,
             gridSpacing: h,
             voxelCount: count
         };
     },
+
+    // Marching-cubes lookup tables, copied verbatim from MoloVol's
+    // SurfaceLUT (src/space.cpp): a 256-entry config->type map, and the
+    // semi-empirical area weight per type (Lindblad 2005, see README
+    // citations) — the same table MoloVol itself uses, not the alternative
+    // "theoretical" weights it keeps commented out in its own source.
+    _surfaceConfigToType: [1,2,2,3,2,3,4,6,2,4,3,6,3,6,6,9,2,3,4,6,4,6,8,10,5,7,7,13,7,13,11,6,2,4,3,6,5,7,7,13,4,8,6,10,7,11,13,6,3,6,6,9,7,13,11,6,7,11,13,6,12,7,7,3,2,4,5,7,3,6,7,13,4,8,7,11,6,10,13,6,3,6,7,13,6,9,11,6,7,11,12,7,13,6,7,3,4,8,7,11,7,11,12,7,8,14,11,8,11,8,7,4,6,10,13,6,13,6,7,3,11,8,7,4,7,4,5,2,2,5,4,7,4,7,8,11,3,7,6,13,6,13,10,6,4,7,8,11,8,11,14,8,7,12,11,7,11,7,8,4,3,7,6,13,7,12,11,7,6,11,9,6,13,7,6,3,6,13,10,6,11,7,8,4,13,7,6,3,7,5,4,2,3,7,7,12,6,13,11,7,6,11,13,7,9,6,6,3,6,13,11,7,10,6,8,4,13,7,7,5,6,3,4,2,6,11,13,7,13,7,7,5,10,8,6,4,6,4,3,2,9,6,6,3,6,3,4,2,6,4,3,2,3,2,2,1],
+    _surfaceAreaByType: [0,0,0.636,0.669,1.272,1.272,0.5537,1.305,1.908,0.927,0.4222,1.1897,1.338,1.5731,2.544],
 
     // --- Radius of gyration (standard/IUPAC definition) ---
     // Mass-weighted over atom positions (nuclei), matching the classical
@@ -243,12 +291,13 @@ const Dosy = {
     // --- Combined DOSY estimate ---
     // No exclusions: always uses every atom in the currently loaded file.
     calcEstimate(atoms) {
-        const { volume, gridSpacing } = this.calcVdwVolume(atoms);
+        const { volume, surfaceArea, gridSpacing } = this.calcVdwVolume(atoms);
         const r0 = Math.cbrt((3 * volume) / (4 * Math.PI));
         const rg = this.calcRadiusOfGyration(atoms);
 
         return {
             volume,
+            surfaceArea,
             gridSpacing,
             r0,
             rg,

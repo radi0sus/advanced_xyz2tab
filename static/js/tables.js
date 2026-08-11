@@ -345,7 +345,10 @@ const Tables = {
                         <thead><tr><th>Solvent</th><th>D from r<sub>eq</sub></th><th>D from r<sub>eq</sub>, Perrin</th><th>D<sub>x,norm</sub></th><th>D (SEGWE)</th></tr></thead>
                         <tbody>${dRows}</tbody>
                     </table>
-                    <div style="margin-top:4px;color:var(--text-muted);font-size:12px">"D from r<sub>eq</sub>" / "...Perrin" plug r<sub>eq</sub> (uncorrected / Perrin-shape-corrected) directly into Stokes&ndash;Einstein, using Holz reference viscosities. "D<sub>x,norm</sub>" and "D (SEGWE)" are two independent semiempirical models (Urbank &amp; Vondung, 2026; Evans et al., 2018) with their own solvent parameters — see README for details, error estimates, and why "D<sub>x,norm</sub>" is not a raw measured D.</div>
+                    <div style="margin-top:4px;color:var(--text-muted);font-size:12px">
+                    D from r<sub>eq</sub> (uncorrected / Perrin corrected) is directly calculated from the Stokes&ndash;Einstein equation using viscosities from Urbank &amp; Vondung (adapted from Holz et al.). 
+                    D<sub>x,norm</sub> and D (SEGWE) are two independent semiempirical models (Urbank &amp; Vondung, 2026  &amp; Evans et al., 2018) with their published solvent parameters — except 
+                    for CDCl₃ in case of D<sub>x,norm</sub>, see README for more details.
                 </div>`;
         }
 

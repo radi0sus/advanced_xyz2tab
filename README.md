@@ -471,9 +471,9 @@ normalize it the same way first (an internal reference in the same sample, per N
 CDCl₃ for $D_{x,norm}$: Urbank & Vondung's own 2026 model was fitted for THF-d₈, C₆D₆, and Toluene-d₈ only — CDCl₃ was not part of their 
 molecule data set. The $a$ and $b$ parameters used here for CDCl₃ ($a$ = 0.2195, $b$ = 0.4873) are a fit of the same functional form 
 derived from 16 reference compounds whose van-der-Waals volumes were computed with the $V_{vdW}$ routine in this tool and whose hydrodynamic radii were 
-back-calculated from $D_{x,norm}$ values published by Bachmann, Neufeld, Dzemski, & Stalke (*Chem. Eur. J.* **2016**, *22*, 8462-8465, Table S9). 
+back-calculated from $D_{x,norm}$ values published by Bachmann et al. (*Chem. Eur. J.* **2016**, *22*, 8462-8465, Table S9). 
 Fit quality: $R^2$ = 0.889, mean absolute relative residual ≈ 5.2% ($n$ = 16, spanning CS/DSE/ED shape classes, $V_{vdW}$ ≈ 79 – 374 Å³). 
-This CDCl₃ value should treated as a rough estimate.
+This CDCl₃ value should be treated as a rough estimate.
 
 $D (SEGWE)$: (Stokes–Einstein–Gierer–Wirtz Estimation) needs only the molecular weight, not the 3D structure — both solute and an assumed-spherical solvent molecule are
 reduced to a radius via a generic, MW-only "radius from mass" relationship (fitted across their calibration set, not a real density), then combined through the classical

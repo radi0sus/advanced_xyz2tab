@@ -416,7 +416,7 @@ loaded structure (exclusions are not applied here):
   ellipsoid), classified as prolate or oblate from which pair of eigenvalues is closer together. $F(p)$ is computed from the exact Kim & Karrila resistance functions
   for prolate/oblate spheroids, orientation-averaged as $D = (D_{\parallel} + 2D_{\perp})/3$ — the isotropic average relevant for a molecule tumbling freely in
   solution. This corrects for shape only, not for the solvent-dependent gap described below — it tends to matter most for distinctly elongated or flattened molecules,
-  where the bare-sphere assumption behind $r_{eq}$ is weakest. Based on the Perrin parameter p (aspect ratio), `Geometry` gives a suggestion for the molecular shape 
+  where the bare-sphere assumption behind $r_{eq}$ is weakest. Based on the Perrin parameter $p$ (aspect ratio), `Geometry` gives a suggestion for the molecular shape 
   defined by Stalke et al.: Compact Spheres (`CS`), Dissipated Spheres and Ellipsoids (`DSE`) or Extended Discs (`ED`).
 - $r_{g}$ (radius of gyration) — the standard, mass-weighted radius of gyration computed from atom positions, $R_g^2 = (1/M)\cdot\sum m_i|r_i-r_{cm}|^2$ (IUPAC Gold
   Book definition; matches LAMMPS' `compute_gyration`, GROMACS' `gmx gyrate`, and OVITO). Shown as an independent, easily externally-verified geometric reference value

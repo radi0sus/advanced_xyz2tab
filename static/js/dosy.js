@@ -407,10 +407,9 @@ const Dosy = {
 
     // --- Diffusion coefficient estimates (Urbank & Vondung route) ---
     // Two/three routes to a predicted D, all from the same vdW volume, for
-    // exactly the three solvents Urbank & Vondung (2026, Chem. Eur. J.,
-    // e71471) fitted their semiempirical model for — CDCl3 is not covered
-    // by their data set, so no coefficients for it are guessed at here
-    // (it's available via the separate SEGWE route below instead).
+    // the three solvents Urbank & Vondung (2026, Chem. Eur. J., e71471)
+    // themselves fitted (THF-d8, C6D6, Toluene-d8), plus a fourth,
+    // NOT-official CDCl3 entry we derived ourselves (see below).
     //
     //   r_eq:      plug r_eq (the bare vdW-volume-equivalent sphere radius)
     //              directly into Stokes-Einstein. This is the classical,
@@ -423,14 +422,17 @@ const Dosy = {
     //              anisotropy only, not for the solvation/continuum gap —
     //              tends to help most for distinctly elongated/flattened
     //              molecules.
-    //   vondung:   first predict the empirical hydrodynamic radius via the
-    //              paper's fitted power law rH = a * VvdW^b (solvent- and
+    //   vondung:   first predict the empirical hydrodynamic radius via a
+    //              fitted power law rH = a * VvdW^b (solvent- and
     //              fit-specific a, b), THEN apply Stokes-Einstein to that.
-    //              This is the approach the paper itself validates against
-    //              real DOSY data, with the "err" fraction below being
-    //              their own reported relative error for that solvent. The
-    //              predicted quantity is Dx,norm (Urbank & Vondung's own
-    //              Stalke-normalized D, see README), not a raw D.
+    //              For THF-d8/C6D6/Toluene-d8 this is Urbank & Vondung's
+    //              own published fit, validated against real DOSY data,
+    //              with "err" being their own reported relative error. For
+    //              CDCl3 it is OUR OWN fit (see solventParams below) —
+    //              same functional form, different/independent data
+    //              source, distinctly lower confidence. The predicted
+    //              quantity is Dx,norm (Stalke-normalized D, see README),
+    //              not a raw D.
     //
     // Viscosities (eta, Pa*s) are Holz reference values, exactly as used by
     // the paper's own calculator spreadsheet — reusing them (rather than a
@@ -442,16 +444,24 @@ const Dosy = {
         'THF-d8':     { a: 0.163, b: 0.57,  eta: 0.00048567605047843566, err: 0.11 },
         'C6D6':       { a: 0.112, b: 0.599, eta: 0.0006263140442965048,  err: 0.09 },
         'Toluene-d8': { a: 0.100, b: 0.65,  eta: 0.0005844627740395051,  err: 0.12 },
-        // No Urbank & Vondung fit exists for CDCl3 (a=b=0 is a deliberate
-        // dummy: it forces rHVondung=0 -> dVondung=Infinity below, which the
-        // UI/export layers filter out via Number.isFinite() rather than
-        // showing a bogus value). eta is still real, though, so "D from
-        // r_eq" / "...Perrin" ARE available for CDCl3 — derived from Holz's
-        // protonated CHCl3 viscosity at 298.15 K (0.5426 mPa*s) times the
-        // deuteration ratio eta_r=1.003 (CDCl3/CHCl3) also given by Holz,
-        // i.e. eta(CDCl3) = eta(CHCl3) * 1.003, consistent with how
-        // Urbank & Vondung's own THF-d8/C6D6 values were derived from Holz.
-        'CDCl3':      { a: 0.000, b: 0.00,  eta: 0.0005442929550000000,  err: 0.00 },
+        // CDCl3 is NOT covered by Urbank & Vondung's own data set (95
+        // molecules, 3 solvents) — no official a/b exists for it. The a/b
+        // below are OUR OWN fit, not Urbank & Vondung's: rH = a*V^b fitted
+        // to log(rH) vs. log(V) for 16 compounds (CS/DSE/ED mixed, no
+        // shape split — same spirit as Vondung's own solvent fits) whose
+        // vdW volumes we computed here and whose hydrodynamic radii we
+        // back-calculated (Stokes-Einstein, Holz CDCl3 viscosity below)
+        // from Dx,norm values published in Neufeld & Stalke's Table S9
+        // (Chem. Sci. 2015, 6, 3354, ADAM-referenced ECC data) — i.e. an
+        // independent, differently-normalized data source, NOT Urbank &
+        // Vondung's raw D measurements. Treat this entry as a rough,
+        // low-confidence estimate (R^2 = 0.889, mean |residual| ~5.2%),
+        // not an equally-validated fourth solvent — see README.
+        // eta: Holz's protonated CHCl3 viscosity at 298.15 K (0.5426
+        // mPa*s) times the deuteration ratio eta_r=1.003 (CDCl3/CHCl3),
+        // also from Holz, i.e. eta(CDCl3) = eta(CHCl3) * 1.003 — consistent
+        // with how Urbank & Vondung's own THF-d8/C6D6 values were derived.
+        'CDCl3':      { a: 0.2195, b: 0.4873, eta: 0.0005442929550000000, err: 0.052 },
     },
 
     kB: 1.380649e-23, // J/K

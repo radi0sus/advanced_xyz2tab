@@ -450,11 +450,10 @@ Below the size estimates, the panel predicts a diffusion coefficient $D$ at 298.
 toluene-d₈, and CDCl₃** (all values in 10⁻⁹ m²·s⁻¹):
 
 The four prediction columns are:
-- $D$ from $r_{eq}$ — bare $r_{eq}$, plugged directly into Stokes–Einstein; solvent data: Holz reference viscosities; covers CDCl₃: Yes
-- $D$ from $r_{eq}$, Perrin — Perrin-shape-corrected $r_{eq}$ (see above), into Stokes–Einstein; solvent data: Holz reference viscosities; covers CDCl₃: Yes
-- $D_{x,norm}$ — $r_H = a\cdot V_{vdW}^b$, fitted per-solvent by Urbank & Vondung (2026); solvent data: Holz reference viscosities; covers CDCl₃: No
-- $D (SEGWE)$ — Stokes–Einstein–Gierer–Wirtz Estimation from MW alone (Evans, Dal Poggetto, Nilsson & Morris, 2018); solvent data: its own Arrhenius-fitted solvent set;
-  covers CDCl₃: Yes
+- $D$ from $r_{eq}$ — bare $r_{eq}$, plugged directly into Stokes–Einstein; solvent data: Holz reference viscosities
+- $D$ from $r_{eq}$, Perrin — Perrin-shape-corrected $r_{eq}$ (see above), into Stokes–Einstein; solvent data: Holz reference viscosities
+- $D_{x,norm}$ — $r_H = a\cdot V_{vdW}^b$, fitted per-solvent by Urbank & Vondung (2026); solvent data: Holz reference viscosities
+- $D (SEGWE)$ — Stokes–Einstein–Gierer–Wirtz Estimation from MW alone (Evans, Dal Poggetto, Nilsson & Morris, 2018); solvent data: its own Arrhenius-fitted solvent set
 
 $D$ from $r_{eq}$ / $r_{eq}$, Perrin: are the classical, shape-blind (and shape-corrected) calculations discussed above, shown mainly as a contrast — expect the
 uncorrected version in particular to run systematically low (e.g. −28% for cyclopentane in THF-d₈ against the literature value). The Perrin-corrected column tends to
@@ -467,8 +466,14 @@ the normalized-diffusion-coefficient method of Neufeld & Stalke (2015, see citat
 internal reference compound measured together in the same sample, and $D_{ref,fix}$ is that reference compound's fixed literature value. This one-reference correction
 removes run-to-run variation (gradient/temperature calibration etc.) without needing an external, independently-calibrated viscosity for every measurement. Consequently,
 inverting the fit here predicts $D_{x,norm}$, not a raw, unnormalized $D$ — a raw DOSY measurement of your own compound isn't directly comparable to this column unless you
-normalize it the same way first (an internal reference in the same sample, per Neufeld & Stalke and Step 3 of Urbank & Vondung's step-by-step guide). No fit for
-CDCl₃ exists in their data set, so this column is blank for it.
+normalize it the same way first (an internal reference in the same sample, per Neufeld & Stalke and Step 3 of Urbank & Vondung's step-by-step guide).   
+
+CDCl₃ for $D_{x,norm}$: Urbank & Vondung's own 2026 model was fitted for THF-d₈, C₆D₆, and Toluene-d₈ only — CDCl₃ was not part of their 
+molecule data set. The $a$ and $b$ parameters used here for CDCl₃ ($a$ = 0.2195, $b$ = 0.4873) are a fit of the same functional form 
+derived from 16 reference compounds whose van-der-Waals volumes were computed with the $V_{vdW}$ routine in this tool and whose hydrodynamic radii were 
+back-calculated from $D_{x,norm}$ values published by Bachmann, Neufeld, Dzemski, & Stalke (*Chem. Eur. J.* **2016**, *22*, 8462-8465, Table S9). 
+Fit quality: $R^2$ = 0.889, mean absolute relative residual ≈ 5.2% ($n$ = 16, spanning CS/DSE/ED shape classes, $V_{vdW}$ ≈ 79 – 374 Å³). 
+This CDCl₃ value should treated as a rough estimate.
 
 $D (SEGWE)$: (Stokes–Einstein–Gierer–Wirtz Estimation) needs only the molecular weight, not the 3D structure — both solute and an assumed-spherical solvent molecule are
 reduced to a radius via a generic, MW-only "radius from mass" relationship (fitted across their calibration set, not a real density), then combined through the classical

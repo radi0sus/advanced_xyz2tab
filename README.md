@@ -400,24 +400,24 @@ tree (main axis → perpendicular $C_2$'s? → $\sigma_h$? → $\sigma_v$ / $\si
 The `Molecular information` panel additionally shows size estimates relevant for DOSY (diffusion-ordered NMR spectroscopy), computed from every atom of the currently
 loaded structure (exclusions are not applied here):
 
-- **Van der Waals volume** — the volume of the union of atomic van der Waals spheres, computed on a voxel grid (default spacing 0.2 Å, automatically coarsened for very
+- Van der Waals volume — the volume of the union of atomic van der Waals spheres, computed on a voxel grid (default spacing 0.2 Å, automatically coarsened for very
   large/spread-out structures to keep memory bounded). Atomic radii are taken from Alvarez (2013), the same default radii set used by [MoloVol](https://molovol.com);
   the grid boundary padding, origin alignment, and voxel classification follow MoloVol's algorithm directly (see its `space.cpp`/`voxel.cpp`), so results match a
   MoloVol calculation at the same grid resolution.
-- **Van der Waals surface area** — the surface area of that same voxelized shape, via marching cubes on the identical grid: each 2×2×2 neighborhood of voxel centers
+- Van der Waals surface area — the surface area of that same voxelized shape, via marching cubes on the identical grid: each 2×2×2 neighborhood of voxel centers
   ("m-cube") is classified into one of 256 solid/empty configurations, mapped to one of 15 area-contribution weights, and summed. The 256→15 lookup table and its
   semi-empirical weights are copied from MoloVol's own `SurfaceLUT` (`space.cpp`), so results match MoloVol at the same grid resolution here too.
-- **$r_{eq}$** — the radius of a sphere with the same volume as the van der Waals volume, $r_0 = (3V/4\pi)^{1/3}$. This is a purely geometric quantity, deliberately *not*
+- $r_{eq}$ — the radius of a sphere with the same volume as the van der Waals volume, $r_0 = (3V/4\pi)^{1/3}$. This is a purely geometric quantity, deliberately *not*
   called $r_H$ or "hydrodynamic radius": it is not calibrated against, or derived from, any diffusion measurement — it only says how big the bare, solvent-free molecule
   is.
-- **$r_{eq}$ (Perrin-corrected)** — $r_0$ scaled by the Perrin translational friction factor $F(p) = f/f_0$, the ratio of the actual friction of a spheroid to that of a
+- $r_{eq}$ (Perrin-corrected) — $r_0$ scaled by the Perrin translational friction factor $F(p) = f/f_0$, the ratio of the actual friction of a spheroid to that of a
   sphere of equal volume, as a function of the aspect ratio $p$ alone. The aspect ratio is obtained from the geometric gyration tensor of the atom positions (each atom
   additionally contributing its own van der Waals radius isotropically, so that exactly planar structures don't produce a degenerate, infinitely thin equivalent
   ellipsoid), classified as prolate or oblate from which pair of eigenvalues is closer together. $F(p)$ is computed from the exact Kim & Karrila resistance functions
   for prolate/oblate spheroids, orientation-averaged as $D = (D_{\parallel} + 2D_{\perp})/3$ — the isotropic average relevant for a molecule tumbling freely in
   solution. This corrects for shape only, not for the solvent-dependent gap described below — it tends to matter most for distinctly elongated or flattened molecules,
   where the bare-sphere assumption behind $r_{eq}$ is weakest.
-- **$r_{g}$ (radius of gyration)** — the standard, mass-weighted radius of gyration computed from atom positions, $R_g^2 = (1/M)\cdot\sum m_i|r_i-r_{cm}|^2$ (IUPAC Gold
+- $r_{g}$ (radius of gyration) — the standard, mass-weighted radius of gyration computed from atom positions, $R_g^2 = (1/M)\cdot\sum m_i|r_i-r_{cm}|^2$ (IUPAC Gold
   Book definition; matches LAMMPS' `compute_gyration`, GROMACS' `gmx gyrate`, and OVITO). Shown as an independent, easily externally-verified geometric reference value
   alongside $r_{eq}$. Note that plugging $r_g$ itself into Stokes–Einstein is not appropriate: $r_g$ measures where the atomic nuclei sit, not the van der Waals surface the
   solvent actually has to move around, and comes out noticeably smaller than $r_{eq}$ as a result.
@@ -450,27 +450,27 @@ Below the size estimates, the panel predicts a diffusion coefficient $D$ at 298.
 toluene-d₈, and CDCl₃** (all values in 10⁻⁹ m²·s⁻¹):
 
 The four prediction columns are:
-- **$D$ from $r_{eq}$** — bare $r_{eq}$, plugged directly into Stokes–Einstein; solvent data: Holz reference viscosities; covers CDCl₃: Yes
-- **$D$ from $r_{eq}$, Perrin** — Perrin-shape-corrected $r_{eq}$ (see above), into Stokes–Einstein; solvent data: Holz reference viscosities; covers CDCl₃: Yes
-- **$D_{x,\,norm}$** — $r_H = a\cdot V_{vdW}^b$, fitted per-solvent by Urbank & Vondung (2026); solvent data: Holz reference viscosities; covers CDCl₃: No
-- **$D (SEGWE)$** — Stokes–Einstein–Gierer–Wirtz Estimation from MW alone (Evans, Dal Poggetto, Nilsson & Morris, 2018); solvent data: its own Arrhenius-fitted solvent set;
+- $D$ from $r_{eq}$ — bare $r_{eq}$, plugged directly into Stokes–Einstein; solvent data: Holz reference viscosities; covers CDCl₃: Yes
+- $D$ from $r_{eq}$, Perrin — Perrin-shape-corrected $r_{eq}$ (see above), into Stokes–Einstein; solvent data: Holz reference viscosities; covers CDCl₃: Yes
+- $D_{x,norm}$ — $r_H = a\cdot V_{vdW}^b$, fitted per-solvent by Urbank & Vondung (2026); solvent data: Holz reference viscosities; covers CDCl₃: No
+- $D (SEGWE)$ — Stokes–Einstein–Gierer–Wirtz Estimation from MW alone (Evans, Dal Poggetto, Nilsson & Morris, 2018); solvent data: its own Arrhenius-fitted solvent set;
   covers CDCl₃: Yes
 
-**$D$ from $r_{eq}$ / $r_{eq}$,Perrin** are the classical, shape-blind (and shape-corrected) calculations discussed above, shown mainly as a contrast — expect the
+$D$ from $r_{eq}$ / $r_{eq}$, Perrin: are the classical, shape-blind (and shape-corrected) calculations discussed above, shown mainly as a contrast — expect the
 uncorrected version in particular to run systematically low (e.g. −28% for cyclopentane in THF-d₈ against the literature value). The Perrin-corrected column tends to
 close part of that gap for distinctly elongated/flattened molecules, but does not touch the solvent-size-ratio gap itself (see "Why this isn't called hydrodynamic radius"
 above) — for compact, near-spherical molecules the two columns are nearly identical.
 
-**$D_{x,\,norm}$** is the model Urbank & Vondung validate against real DOSY data (9–12% reported error, depending on solvent; the cyclopentane/THF-d₈ check above comes
-out at only −5%). The label matters: $a$ and $b$ were fitted against their own diffusion coefficients *after* normalization, $D_{x,\,norm}$ — 
+$D_{x,norm}$: is the model Urbank & Vondung validate against real DOSY data (9–12% reported error, depending on solvent; the cyclopentane/THF-d₈ check above comes
+out at only −5%). The label matters: $a$ and $b$ were fitted against their own diffusion coefficients *after* normalization, $D_{x,norm}$ — 
 the normalized-diffusion-coefficient method of Neufeld & Stalke (2015, see citations), where $D_x$ and $D_{ref}$ are the diffusion coefficients of the analyte and an
 internal reference compound measured together in the same sample, and $D_{ref,fix}$ is that reference compound's fixed literature value. This one-reference correction
 removes run-to-run variation (gradient/temperature calibration etc.) without needing an external, independently-calibrated viscosity for every measurement. Consequently,
-inverting the fit here predicts $D_{x,\,norm}$, not a raw, unnormalized $D$ — a raw DOSY measurement of your own compound isn't directly comparable to this column unless you
+inverting the fit here predicts $D_{x,norm}$, not a raw, unnormalized $D$ — a raw DOSY measurement of your own compound isn't directly comparable to this column unless you
 normalize it the same way first (an internal reference in the same sample, per Neufeld & Stalke and Step 3 of Urbank & Vondung's step-by-step guide). No fit for
 CDCl₃ exists in their data set, so this column is blank for it.
 
-**$D (SEGWE)$** (Stokes–Einstein–Gierer–Wirtz Estimation) needs only the molecular weight, not the 3D structure — both solute and an assumed-spherical solvent molecule are
+$D (SEGWE)$: (Stokes–Einstein–Gierer–Wirtz Estimation) needs only the molecular weight, not the 3D structure — both solute and an assumed-spherical solvent molecule are
 reduced to a radius via a generic, MW-only "radius from mass" relationship (fitted across their calibration set, not a real density), then combined through the classical
 Gierer–Wirtz microviscosity factor $f = [1.5\cdot(r_{solvent}/r_{solute}) + (1+r_{solvent}/r_{solute})^{-1}]^{-1}$, $D = kT/(6\pi f\cdot\eta\cdot r_{solute})$. The paper
 reports ~15% RMS error overall, and the method is validated for small molecules (<1000 g/mol) containing only light elements (sulfur or lighter) — heavier elements
@@ -529,7 +529,7 @@ The radius of gyration follows the standard IUPAC definition, matching the conve
 > *Modelling and Simulation in Materials Science and Engineering* **2010**, *18*, 015012.  
 > https://doi.org/10.1088/0965-0393/18/1/015012
 
-The $D_{x,\,norm}$ estimate and background on why a naive Stokes–Einstein hydrodynamic radius from molecular size can be a poor proxy for the
+The $D_{x,norm}$ estimate and background on why a naive Stokes–Einstein hydrodynamic radius from molecular size can be a poor proxy for the
 DOSY-measured value:
 
 > Christian Urbank, Lisa Vondung,  
@@ -537,7 +537,7 @@ DOSY-measured value:
 > *Chemistry – A European Journal* **2026**, e71471.  
 > https://doi.org/10.1002/chem.71471
 
-The $D_{x,\,norm}$ normalization convention that Urbank & Vondung's model was fitted against:
+The $D_{x,norm}$ normalization convention that Urbank & Vondung's model was fitted against:
 
 > Roman Neufeld, Dietmar Stalke,  
 > "Accurate molecular weight determination of small molecules via DOSY-NMR by using external calibration curves with normalized diffusion coefficients",  

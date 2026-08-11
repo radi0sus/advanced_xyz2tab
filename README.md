@@ -345,7 +345,7 @@ The ideal reference polyhedra (coordinates) follow the same set used by `cosymli
 
 ### Rating colors
 
-`S` values are colored to give a quick visual read on how reliable the shape assignment is:
+$S$ values are colored to give a quick visual read on how reliable the shape assignment is:
 
 - **green** — $S$ &lt; 3: clearly identifiable shape, distortion is minor.
 - **orange** — 3 ≤ $S$ &lt; 15: noticeably distorted but the closest shape is still informative.
@@ -363,7 +363,7 @@ The `Symmetry` tab runs an approximate, geometry-only point group detection dire
 
 Rather than a strict yes/no test, every candidate symmetry element (rotation axis, mirror plane, inversion center, improper rotation) gets a continuous error value in Å:
 how well that operation actually maps the structure onto itself. A tolerance slider then decides which elements count as "present", and the standard textbook decision
-tree (main axis → perpendicular $C_2$'s? → $\sigma_h$? → $\sigma_v$/$\sigma_d$? → ...) is used to assign a point group from there.
+tree (main axis → perpendicular $C_2$'s? → $\sigma_h$? → $\sigma_v$ / $\sigma_d$? → ...) is used to assign a point group from there.
 
 ### Workflow
 
@@ -387,7 +387,7 @@ tree (main axis → perpendicular $C_2$'s? → $\sigma_h$? → $\sigma_v$/$\sigm
 
 ### Known limitations
 
-- The cubic branch additionally requires a full "$D_2$ rotational core" (3 mutually perpendicular $C_2$ axes) before it is even considered, to avoid falsely classifying
+- The cubic branch additionally requires a full $D_2$ rotational core (3 mutually perpendicular $C_2$ axes) before it is even considered, to avoid falsely classifying
   non-cubic (e.g. trigonally distorted, $D_3$, $D_3d$-type) coordination complexes as cubic just because a coincidentally-passing $C_3$-like axis is found (any
   roughly-octahedral 6-ligand arrangement can produce such axes through alternating "face" directions, independent of the true molecular symmetry).
 - The $D_{nd}$ vs. $D_{nh}$ distinction, and the tetrahedral/octahedral sub-classification ($T$, $T_h$, $O$, $T_d$, $O_h$), rely on the presence/absence of specific elements
@@ -408,7 +408,7 @@ loaded structure (exclusions are not applied here):
   ("m-cube") is classified into one of 256 solid/empty configurations, mapped to one of 15 area-contribution weights, and summed. The 256→15 lookup table and its
   semi-empirical weights are copied from MoloVol's own `SurfaceLUT` (`space.cpp`), so results match MoloVol at the same grid resolution here too.
 - **$r_{eq}$** — the radius of a sphere with the same volume as the van der Waals volume, $r_0 = (3V/4\pi)^{1/3}$. This is a purely geometric quantity, deliberately *not*
-  called "$r_H$" or "hydrodynamic radius": it is not calibrated against, or derived from, any diffusion measurement — it only says how big the bare, solvent-free molecule
+  called $r_H$ or "hydrodynamic radius": it is not calibrated against, or derived from, any diffusion measurement — it only says how big the bare, solvent-free molecule
   is.
 - **$r_{eq}$ (Perrin-corrected)** — $r_0$ scaled by the Perrin translational friction factor $F(p) = f/f_0$, the ratio of the actual friction of a spheroid to that of a
   sphere of equal volume, as a function of the aspect ratio $p$ alone. The aspect ratio is obtained from the geometric gyration tensor of the atom positions (each atom

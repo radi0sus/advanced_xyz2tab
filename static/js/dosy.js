@@ -383,6 +383,26 @@ const Dosy = {
         return 3 / (1 / Fpar + 2 / Fperp);
     },
 
+ // --- Stalke shape classification (CS / DSE / ED) ---
+    classifyStalkeShape(p, shape) {
+        if (!isFinite(p)) return 'DSE';
+
+        if (shape === 'prolate') {
+            if (p < 1.15) return 'CS';
+            if (p > 1.8) return 'ED';
+            return 'DSE';
+        }
+
+        if (shape === 'oblate') {
+            const pInv = p > 0 ? 1 / p : 1;
+            if (pInv < 1.5) return 'CS';
+            if (pInv > 3.5) return 'ED';
+            return 'DSE';
+        }
+
+        return 'DSE';
+    },
+
     // --- Combined DOSY estimate ---
     // No exclusions: always uses every atom in the currently loaded file.
     calcEstimate(atoms) {
@@ -391,6 +411,7 @@ const Dosy = {
         const rg = this.calcRadiusOfGyration(atoms);
         const { p, shape } = this.calcAspectRatio(atoms);
         const F = this.calcPerrinFactor(p);
+        const stalkeClass = this.classifyStalkeShape(p, shape);   
 
         return {
             volume,
@@ -402,6 +423,7 @@ const Dosy = {
             shape,
             F,
             rPerrin: F * r0,
+             stalkeClass, 
         };
     },
 

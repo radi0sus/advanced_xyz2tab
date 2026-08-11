@@ -34,7 +34,7 @@ No installation and no Python environment are required for normal use.
   - Cremer-Pople ring puckering parameters (Q, $\theta$, $\phi_2$) for 5- and 6-membered rings
   - approximate ring conformation classification (chair, boat, twist-boat, envelope, half-chair, twist)
   - Continuous Shape Measures (CShM) for any bonded coordination sphere (CN 2–6), against the ideal reference polyhedra, plus polyhedral volume and
-    $\tau_4$/$\tau_4\prime$/$\tau_5$ geometry indices (CN 4/5)
+    $\tau_4$, $\tau_4\prime$, $\tau_5$ geometry indices (CN 4/5)
   - approximate molecular point group symmetry, with a tolerance-adjustable, per-element error score
   - manual distances
   - manual angles
@@ -138,7 +138,7 @@ Changing the label index only affects displayed labels and exported labels. It d
 
 Bonds are detected from covalent radii:
 
-$distance(A–B) <= (rA + rB) × tolerance$  
+$Distance(A–B) <= (r_A + r_B) × tolerance$  
 
 
 The tolerance can be adjusted interactively with the `Cov. radius +` slider.  
@@ -377,7 +377,7 @@ tree (main axis → perpendicular $C_2$'s? → $\sigma_h$? → $\sigma_v$/$\sigm
 
 ### Scope
 
-- Solid: $C_1$, $C_s$, $C_i$, $C_n$, $C_{nv}$, $C_{nh}$, $D_n$, $D_{nh}$, $D_{nd}$, $S_{2n}$ (n = 1–8), the linear groups $C_{\infty v}$/$D_{\infty h}$, and $K_h$ for the
+- Solid: $C_1$, $C_s$, $C_i$, $C_n$, $C_{nv}$, $C_{nh}$, $D_n$, $D_{nh}$, $D_{nd}$, $S_{2n}$ (n = 1–8), the linear groups $C_{\infty v}$, $D_{\infty h}$, and $K_h$ for the
   degenerate single-atom (or coincident-point) case — a lone atom has no distinguished axis at all, so it's the full spherical symmetry group,
   not $D_{\infty h}$.
 - Best effort: the cubic groups $T$, $T_h$, $O$, $T_d$, $O_h$. Their defining axes generally do not pass through any atom (they run through face/edge midpoints of the ligand
@@ -388,7 +388,7 @@ tree (main axis → perpendicular $C_2$'s? → $\sigma_h$? → $\sigma_v$/$\sigm
 ### Known limitations
 
 - The cubic branch additionally requires a full "$D_2$ rotational core" (3 mutually perpendicular $C_2$ axes) before it is even considered, to avoid falsely classifying
-  non-cubic (e.g. trigonally distorted, $D_3$/$D_3d$-type) coordination complexes as cubic just because a coincidentally-passing $C_3$-like axis is found (any
+  non-cubic (e.g. trigonally distorted, $D_3$, $D_3d$-type) coordination complexes as cubic just because a coincidentally-passing $C_3$-like axis is found (any
   roughly-octahedral 6-ligand arrangement can produce such axes through alternating "face" directions, independent of the true molecular symmetry).
 - The $D_{nd}$ vs. $D_{nh}$ distinction, and the tetrahedral/octahedral sub-classification ($T$, $T_h$, $O$, $T_d$, $O_h$), rely on the presence/absence of specific elements
   rather than a full character-table match, and can be sensitive to real-world distortion.
@@ -462,7 +462,7 @@ close part of that gap for distinctly elongated/flattened molecules, but does no
 above) — for compact, near-spherical molecules the two columns are nearly identical.
 
 **$D_{x,\,norm}$** is the model Urbank & Vondung validate against real DOSY data (9–12% reported error, depending on solvent; the cyclopentane/THF-d₈ check above comes
-out at only −5%). The label matters: $a$ and $b$ were fitted against their own diffusion coefficients *after* normalization, $D_{x,\,norm} — 
+out at only −5%). The label matters: $a$ and $b$ were fitted against their own diffusion coefficients *after* normalization, $D_{x,\,norm}$ — 
 the normalized-diffusion-coefficient method of Neufeld & Stalke (2015, see citations), where $D_x$ and $D_{ref}$ are the diffusion coefficients of the analyte and an
 internal reference compound measured together in the same sample, and $D_{ref,fix}$ is that reference compound's fixed literature value. This one-reference correction
 removes run-to-run variation (gradient/temperature calibration etc.) without needing an external, independently-calibrated viscosity for every measurement. Consequently,
@@ -474,8 +474,8 @@ CDCl₃ exists in their data set, so this column is blank for it.
 reduced to a radius via a generic, MW-only "radius from mass" relationship (fitted across their calibration set, not a real density), then combined through the classical
 Gierer–Wirtz microviscosity factor $f = [1.5\cdot(r_{solvent}/r_{solute}) + (1+r_{solvent}/r_{solute})^{-1}]^{-1}$, $D = kT/(6\pi f\cdot\eta\cdot r_{solute})$. The paper
 reports ~15% RMS error overall, and the method is validated for small molecules (<1000 g/mol) containing only light elements (sulfur or lighter) — heavier elements
-(transition metals, lanthanides/actinides, etc.) are outside its tested range, so treat this column with extra caution for organometallic/coordination complexes. **The
-SEGWE solvent parameters (molar mass, Arrhenius viscosity $\eta(T) = A\cdot\exp(B/T)$) are entirely separate from the Holz values used in the other three columns** 
+(transition metals, lanthanides/actinides, etc.) are outside its tested range, so treat this column with extra caution for organometallic/coordination complexes.  
+The SEGWE solvent parameters (molar mass, Arrhenius viscosity $\eta(T) = A\cdot\exp(B/T)$) are entirely separate from the Holz values used in the other three columns.
 
 No solvent database beyond these four solvents is bundled, and no temperature dependence is offered in the interface (298.15 K only, though SEGWE's underlying model does
 support it) — this stays a small, fixed set of size-based estimates for solvents commonly used in DOSY, not a general-purpose diffusion calculator.
@@ -711,7 +711,7 @@ See `LICENSE` for details.
 - Saved plane names are currently generated automatically.
 - Plane tables are currently not sortable.
 - Ring puckering conformation classification is an approximate, band-based assignment to the general conformation family, not an exact match to canonical IUPAC reference forms.
-- Point group symmetry detection is approximate and geometry-only; icosahedral ($I$/$I_h$) is not covered, and the cubic groups ($T$, $T_h$, $O$, $T_d$, $O_h$) are best-effort (see "Point
+- Point group symmetry detection is approximate and geometry-only; icosahedral ($I$, $I_h$) is not covered, and the cubic groups ($T$, $T_h$, $O$, $T_d$, $O_h$) are best-effort (see "Point
   group symmetry" above).
 - CShM is currently implemented for CN 2-6 only; the `Save CShM` button is disabled outside that range.
 - $\tau_4$, $\tau_4\prime$ and $\tau_5$ are only computed (and shown) for CN 4 and CN 5, respectively; they are not part of the saved-results overview table, only the

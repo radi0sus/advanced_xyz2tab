@@ -395,10 +395,10 @@ tree (main axis → perpendicular $C_2$'s? → $\sigma_h$? → $\sigma_v$ / $\si
 - As with the ring puckering analysis, this is an approximation intended for quick, interactive orientation, not a substitute for a dedicated symmetry package for
   publication-grade classification.
 
-## DOSY size estimates
+## DOSY size estimates and other properties
 
-The `Molecular information` panel additionally shows size estimates relevant for DOSY (diffusion-ordered NMR spectroscopy), computed from every atom of the currently
-loaded structure (exclusions are not applied here):
+The `Molecular information` panel additionally shows size estimates relevant for DOSY (diffusion-ordered NMR spectroscopy) and other properties, computed from every 
+atom of the currently loaded structure (azom or element exclusions are not applied here):
 
 - Van der Waals volume — the volume of the union of atomic van der Waals spheres, computed on a voxel grid (default spacing 0.2 Å, automatically coarsened for very
   large/spread-out structures to keep memory bounded). Atomic radii are taken from Alvarez (2013), the same default radii set used by [MoloVol](https://molovol.com);
@@ -407,6 +407,10 @@ loaded structure (exclusions are not applied here):
 - Van der Waals surface area — the surface area of that same voxelized shape, via marching cubes on the identical grid: each 2×2×2 neighborhood of voxel centers
   ("m-cube") is classified into one of 256 solid/empty configurations, mapped to one of 15 area-contribution weights, and summed. The 256→15 lookup table and its
   semi-empirical weights are copied from MoloVol's own `SurfaceLUT` (`space.cpp`), so results match MoloVol at the same grid resolution here too.
+- Solvent accessible surface area (SASA) — MoloVol's "Probe Accessible Surface": the surface traced by the *center* of a spherical probe (default radius
+  1.4 Å, i.e. water) rolling around the van der Waals surface. Geometrically, that surface is exactly the van der Waals surface of every atomic radius inflated by 
+  the probe radius (a probe rolling around a union of spheres traces out the union of spheres grown by the probe radius), so no separate algorithm is needed: 
+  it is the same voxel grid/marching-cubes routine above, just re-run with $r_i \to r_i + r_{probe}$.
 - $r_{eq}$ — the radius of a sphere with the same volume as the van der Waals volume, $r_0 = (3V/4\pi)^{1/3}$. This is a purely geometric quantity, deliberately *not*
   called $r_H$ or "hydrodynamic radius": it is not calibrated against, or derived from, any diffusion measurement — it only says how big the bare, solvent-free molecule
   is.

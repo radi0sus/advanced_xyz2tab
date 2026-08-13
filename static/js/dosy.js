@@ -12,22 +12,35 @@
 
 const Dosy = {
 
-    // --- Van der Waals volume via voxel grid (MoloVol-style) ---
+    // --- Van der Waals / probe-accessible (SASA) volume via voxel grid (MoloVol-style) ---
     // Marks, per atom, only the voxels inside that atom's own bounding box
     // (not the whole grid), so cost scales with atom count x sphere size,
     // not with total grid size.
     // --- Van der Waals volume via MoloVol-compatible voxel grid ---
-    calcVdwVolume(atoms, targetSpacing = 0.2, maxVoxels = 20_000_000) {
+    //
+    // probeRadius: 0 gives the plain van der Waals surface/volume. A
+    // non-zero value (e.g. 1.4 Å for water) gives MoloVol's "probe
+    // accessible surface" (Sacc) — the Lee-Richards / solvent accessible
+    // surface area (SASA). Geometrically, the locus of a rolling probe's
+    // center around a union of spheres is exactly the surface of the union
+    // of spheres inflated by the probe radius (Minkowski sum with a ball),
+    // so SASA needs no separate algorithm: it's the same voxel/marching-
+    // cubes routine, just with every atomic radius increased by
+    // probeRadius before the grid is built. Verified against MoloVol
+    // (ASA = 360.137 Å² for the bundled asa.xyz test molecule at 1.4 Å
+    // probe radius, 0.2 Å grid spacing).
+    calcVdwVolume(atoms, targetSpacing = 0.2, maxVoxels = 20_000_000, probeRadius = 0) {
         if (!atoms.length) {
             return {
                 volume: 0,
+                surfaceArea: 0,
                 gridSpacing: targetSpacing,
                 voxelCount: 0
             };
         }
     
         const h = targetSpacing;
-        const radii = atoms.map(a => Parser.getVdwRadius(a.element));
+        const radii = atoms.map(a => Parser.getVdwRadius(a.element) + probeRadius);
     
         /*
          * MoloVol:
@@ -63,8 +76,8 @@ const Dosy = {
         }
     
         // MoloVol: add_space = r_probe + 2*grid_size
-        // For vdW: r_probe = 0
-        const addSpace = 2 * h;
+        // For vdW: r_probe = 0. For SASA: r_probe = probeRadius (e.g. 1.4 Å).
+        const addSpace = probeRadius + 2 * h;
     
         minX -= addSpace + maxRadius;
         minY -= addSpace + maxRadius;
@@ -403,10 +416,15 @@ const Dosy = {
         return 'DSE';
     },
 
+    // Standard probe radius for solvent accessible surface area (SASA),
+    // matching the usual water-probe convention (and MoloVol's default).
+    SASA_PROBE_RADIUS: 1.4, // Å
+
     // --- Combined DOSY estimate ---
     // No exclusions: always uses every atom in the currently loaded file.
     calcEstimate(atoms) {
         const { volume, surfaceArea, gridSpacing } = this.calcVdwVolume(atoms);
+        const sasa = this.calcVdwVolume(atoms, gridSpacing, undefined, this.SASA_PROBE_RADIUS);
         const r0 = Math.cbrt((3 * volume) / (4 * Math.PI));
         const rg = this.calcRadiusOfGyration(atoms);
         const { p, shape } = this.calcAspectRatio(atoms);
@@ -417,6 +435,9 @@ const Dosy = {
             volume,
             surfaceArea,
             gridSpacing,
+            sasaSurfaceArea: sasa.surfaceArea,
+            sasaVolume: sasa.volume,
+            sasaProbeRadius: this.SASA_PROBE_RADIUS,
             r0,
             rg,
             p,

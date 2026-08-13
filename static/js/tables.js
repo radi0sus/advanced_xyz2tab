@@ -308,6 +308,9 @@ const Tables = {
                     <div style="margin-bottom:4px"><b>Van der Waals surface area:</b> ${est.surfaceArea.toFixed(3)} &#8491;&sup2;
                         <span style="color:var(--text-muted);font-size:12px">(marching cubes on the same grid, Lindblad 2005 area weights — matches MoloVol)</span>
                     </div>
+                    <div style="margin-bottom:4px"><b>Solvent accessible surface area:</b> ${est.sasaSurfaceArea.toFixed(3)} &#8491;&sup2;
+                        <span style="color:var(--text-muted);font-size:12px">(probe r&nbsp;=&nbsp;${est.sasaProbeRadius.toFixed(1)} &#8491; (water) — matches MoloVol)</span>
+                    </div>
                     <div style="margin-bottom:4px"><b>r<sub>eq</sub> (uncorrected):</b> ${est.r0.toFixed(3)} &#8491;
                         <span style="color:var(--text-muted);font-size:12px">(vdW-volume-equivalent sphere radius — a geometric proxy, not the empirical hydrodynamic radius)</span>
                     </div>

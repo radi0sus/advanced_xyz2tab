@@ -271,6 +271,7 @@ const Markdown = {
             const est = Dosy.calcEstimate(atoms);
             lines.push(`**Van der Waals volume:** ${est.volume.toFixed(3)} Å³  `);
             lines.push(`**Van der Waals surface area:** ${est.surfaceArea.toFixed(3)} Å²  `);
+            lines.push(`**Solvent accessible surface area:** ${est.sasaSurfaceArea.toFixed(3)} Å² (probe r = ${est.sasaProbeRadius.toFixed(1)} Å (water))  `);
             lines.push(`**r~eq~ (uncorrected):** ${est.r0.toFixed(3)} Å  `);
             lines.push(`**r~eq~ (Perrin-corrected):** ${est.rPerrin.toFixed(3)} Å (${est.shape}, p = ${est.p.toFixed(3)}, F = ${est.F.toFixed(3)}, Geometry = ${est.stalkeClass})  `);
             lines.push(`**r~g~ (radius of gyration):** ${est.rg.toFixed(3)} Å  `);

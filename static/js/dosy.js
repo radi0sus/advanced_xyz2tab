@@ -224,6 +224,83 @@ const Dosy = {
         }
 
         /*
+         * Solvent/probe-accessible surface only (probeRadius > 0): a void
+         * voxel is only truly "accessible" if a probe can actually reach it
+         * from outside the structure — not just if it happens to lie
+         * outside every inflated atomic sphere. A fully enclosed cavity
+         * (e.g. the interior of a closed cage like C60) can satisfy the
+         * latter while its only openings are narrower than the probe
+         * diameter, in which case the probe geometrically cannot enter it.
+         * MoloVol's own Sacc excludes such trapped interior walls from the
+         * reported surface area (see assignShellVsVoid() / "voxel
+         * inaccessible by probe" in its Voxel type table) — without this
+         * step, closed-cage/cryptand-type structures would get an
+         * artificially large SASA from double-counting an interior surface
+         * the solvent can never touch.
+         *
+         * Implemented as a flood fill of void voxels (grid === 0) starting
+         * from the six outer faces of the grid, which are always void
+         * thanks to the boundary padding above. Any void voxel the flood
+         * fill never reaches is trapped behind openings smaller than the
+         * probe and is therefore treated as solid for surface-area
+         * purposes only (the reported volume is left untouched, since
+         * MoloVol doesn't provide/compare a probe-accessible molecular
+         * volume for this surface type either — see README).
+         */
+        let solidForSurface = grid;
+        if (probeRadius > 0) {
+            const visited = new Uint8Array(grid.length);
+            const queue = new Int32Array(grid.length);
+            let qHead = 0, qTail = 0;
+
+            const tryPush = idx => {
+                if (grid[idx] === 0 && visited[idx] === 0) {
+                    visited[idx] = 1;
+                    queue[qTail++] = idx;
+                }
+            };
+
+            for (let ix = 0; ix < nx; ix++) {
+                for (let iy = 0; iy < ny; iy++) {
+                    tryPush(ix * strideX + iy * strideY + 0);
+                    tryPush(ix * strideX + iy * strideY + (nz - 1));
+                }
+            }
+            for (let ix = 0; ix < nx; ix++) {
+                for (let iz = 0; iz < nz; iz++) {
+                    tryPush(ix * strideX + 0 * strideY + iz);
+                    tryPush(ix * strideX + (ny - 1) * strideY + iz);
+                }
+            }
+            for (let iy = 0; iy < ny; iy++) {
+                for (let iz = 0; iz < nz; iz++) {
+                    tryPush(0 * strideX + iy * strideY + iz);
+                    tryPush((nx - 1) * strideX + iy * strideY + iz);
+                }
+            }
+
+            while (qHead < qTail) {
+                const idx = queue[qHead++];
+                const ix = Math.floor(idx / strideX);
+                const rem = idx - ix * strideX;
+                const iy = Math.floor(rem / strideY);
+                const iz = rem - iy * strideY;
+
+                if (ix > 0) tryPush(idx - strideX);
+                if (ix < nx - 1) tryPush(idx + strideX);
+                if (iy > 0) tryPush(idx - strideY);
+                if (iy < ny - 1) tryPush(idx + strideY);
+                if (iz > 0) tryPush(idx - 1);
+                if (iz < nz - 1) tryPush(idx + 1);
+            }
+
+            solidForSurface = new Uint8Array(grid.length);
+            for (let i = 0; i < grid.length; i++) {
+                solidForSurface[i] = (grid[i] === 1 || visited[i] === 0) ? 1 : 0;
+            }
+        }
+
+        /*
          * MoloVol's surface area: marching cubes over the SAME voxel grid
          * (a voxel's "type" here is just our solid/1 vs. empty/0), using the
          * semi-empirical per-configuration area weights of Lindblad (2005,
@@ -247,14 +324,14 @@ const Dosy = {
                 for (let iz = 0; iz < nz - 1; iz++) {
                     // bit = z + 2y + 4x, for (x,y,z) corner offsets in {0,1}
                     const config =
-                        (grid[base + iz]) |
-                        (grid[base + iz + 1] << 1) |
-                        (grid[baseY + iz] << 2) |
-                        (grid[baseY + iz + 1] << 3) |
-                        (grid[baseX + iz] << 4) |
-                        (grid[baseX + iz + 1] << 5) |
-                        (grid[baseXY + iz] << 6) |
-                        (grid[baseXY + iz + 1] << 7);
+                        (solidForSurface[base + iz]) |
+                        (solidForSurface[base + iz + 1] << 1) |
+                        (solidForSurface[baseY + iz] << 2) |
+                        (solidForSurface[baseY + iz + 1] << 3) |
+                        (solidForSurface[baseX + iz] << 4) |
+                        (solidForSurface[baseX + iz + 1] << 5) |
+                        (solidForSurface[baseXY + iz] << 6) |
+                        (solidForSurface[baseXY + iz + 1] << 7);
                     if (config === 0 || config === 255) continue; // fully empty or fully solid: no local surface
                     surface += this._surfaceAreaByType[this._surfaceConfigToType[config]];
                 }

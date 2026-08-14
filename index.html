@@ -78,6 +78,15 @@
                     <button id="btn-toggle-atom-labels" class="btn-small">Atom names</button>
                     <button id="btn-toggle-bond-labels" class="btn-small">Bond lengths</button>
                     <button id="btn-toggle-planes" class="btn-small active" title="Show/hide saved planes in the 3D viewer">Planes</button>
+                    <button id="btn-toggle-volumes" class="btn-small" title="Show/hide the selected mesh in the 3D viewer">Mesh view</button>
+                    <select id="volume-mode-select" title="Choose which mesh to display">
+                        <option value="vdw_surface" selected>Van der Waals Surface</option>
+                        <option value="sasa">SASA</option>
+                        <option value="r_eq">r_eq (sphere)</option>
+                        <option value="r_eq_perrin">Perrin ellipsoid</option>
+                        <option value="r_eq_perrin_sphere">r_eq Perrin (sphere)</option>
+                        <option value="r_g">r_g (sphere)</option>
+                    </select>
                     <button id="btn-toggle-axes" class="btn-small active" title="Show a small rotating X/Y/Z axis indicator">Axes</button>
                     <button id="btn-toggle-legend" class="btn-small active" title="Show element color legend in the 3D viewer">Legend</button>
                 </div>
@@ -295,6 +304,7 @@
 <script src="static/js/format.js"></script>
 <script src="static/js/chem.js"></script>
 <script src="static/js/dosy.js"></script>
+<script src="static/js/volumes.js"></script>
 <script src="static/js/cshm.js"></script>
 <script src="static/js/symmetry.js"></script>
 <script src="static/js/tables.js"></script>
@@ -306,6 +316,7 @@
 <script src="static/js/app.selection.js"></script>
 <script src="static/js/app.measurements.js"></script>
 <script src="static/js/app.geometry.js"></script>
+<script src="static/js/app.volumes.js"></script>
 <script src="static/js/app.ring.js"></script>
 <script src="static/js/app.cshm.js"></script>
 <script src="static/js/app.symmetry.js"></script>

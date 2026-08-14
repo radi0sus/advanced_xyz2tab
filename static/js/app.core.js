@@ -154,6 +154,9 @@ const App = {
             Viewer.setShowLegend(on);
         });
 
+        // Volumes & Surfaces overlay (VdW volume/surface, SASA, r_eq/r_eq,Perrin/r_g)
+        this._initVolumesControl();
+
         // Atom label index start: 0 or 1
         const atomIndexStartSelect = document.getElementById('atom-index-start');
 

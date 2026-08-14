@@ -394,7 +394,7 @@ const Dosy = {
     // the 1/5 constant and of absolute size.
     calcAspectRatio(atoms) {
         const n = atoms.length;
-        if (n < 2) return { p: 1, shape: 'sphere' };
+        if (n < 2) return { p: 1, shape: 'sphere', axis: { x: 0, y: 0, z: 1 } };
 
         let cx = 0, cy = 0, cz = 0;
         for (const a of atoms) { cx += a.x; cy += a.y; cz += a.z; }
@@ -409,26 +409,36 @@ const Dosy = {
         }
         xx /= n; yy /= n; zz /= n; xy /= n; xz /= n; yz /= n;
 
-        const { values } = Chem._jacobi3x3([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]]);
-        const sorted = [...values].sort((a, b) => b - a).map(v => Math.max(v, 0));
-        const [l1, l2, l3] = sorted;
+        const { values, vectors } = Chem._jacobi3x3([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]]);
+
+        // Sort by eigenvalue (descending) while keeping track of which
+        // original eigenvector (column of `vectors`) belongs to which —
+        // needed below to orient the equivalent spheroid in 3D, not just
+        // to get its aspect ratio.
+        const order = [0, 1, 2].sort((i, j) => values[j] - values[i]);
+        const l1 = Math.max(values[order[0]], 0);
+        const l2 = Math.max(values[order[1]], 0);
+        const l3 = Math.max(values[order[2]], 0);
 
         const d12 = l1 - l2, d23 = l2 - l3;
-        let shape, lAx, lEq;
+        let shape, lAx, lEq, axisVec;
         if (d23 <= d12) {
             // The two smaller eigenvalues are closer together -> those two
             // form the equatorial plane, the largest is the unique (longer)
             // axis -> prolate (cigar-shaped).
             shape = 'prolate'; lAx = l1; lEq = (l2 + l3) / 2;
+            axisVec = vectors[order[0]];
         } else {
             // The two larger eigenvalues are closer together -> those two
             // form the (longer) equatorial plane, the smallest is the
             // unique (shorter) axis -> oblate (disc-shaped).
             shape = 'oblate'; lAx = l3; lEq = (l1 + l2) / 2;
+            axisVec = vectors[order[2]];
         }
 
         const p = lEq > 1e-10 ? Math.sqrt(lAx / lEq) : 1;
-        return { p, shape };
+        const axis = { x: axisVec[0], y: axisVec[1], z: axisVec[2] };
+        return { p, shape, axis };
     },
 
     // --- Perrin translational shape factor F(p) = f/f0 ---

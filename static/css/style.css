@@ -469,11 +469,28 @@ body.resizing-vertical {
 
 #viewer-controls {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
     padding: 6px 8px;
     background: var(--viewer-controls-bg);
     border-top: 1px solid var(--viewer-border);
     flex-shrink: 0;
+}
+
+#volume-mode-select {
+    padding: 3px 6px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--viewer-button-border);
+    background: var(--viewer-button-bg);
+    color: var(--viewer-button-text);
+    font-size: 12.5px;
+    font-family: var(--font);
+    outline: none;
+}
+
+#volume-mode-select:focus {
+    border-color: var(--accent);
 }
 
 /* Resizable wrapper around the controls row + selection/geometry toolbar,

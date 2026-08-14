@@ -127,6 +127,11 @@ const Viewer = {
     _plane1Data: null,
     _plane2Data: null,
     _showPlanes: true,
+
+    // Volumes & Surfaces overlay (VdW volume/surface, SASA, r_eq/r_eq,Perrin/r_g)
+    _showVolumes: false,
+    _volumeMode: 'vdw_surface',
+    _volumeShapes: [],
     _onAtomClick: null,
     _renderTimer: null,
     _hasZoomed: false,
@@ -242,6 +247,16 @@ const Viewer = {
     setShowPlanes(enabled) {
         this._showPlanes = enabled;
         this._scheduleFullRender();
+    },
+
+    setShowVolumes(enabled) {
+        this._showVolumes = enabled;
+        this._scheduleFullRender();
+    },
+
+    setVolumeMode(mode) {
+        this._volumeMode = mode;
+        if (this._showVolumes) this._scheduleFullRender();
     },
 
     _drawGizmo() {
@@ -583,6 +598,13 @@ const Viewer = {
             }
         }
 
+        // Volumes & Surfaces overlay — rebuilt every full render, same as
+        // Planes above (removeAllShapes() already cleared the old ones).
+        this._volumeShapes = [];
+        if (this._showVolumes) {
+            this._drawVolumeOverlay();
+        }
+
         // zoomTo only on first load, not on style updates
         if (!this._hasZoomed) {
             this._zoomToFit();
@@ -593,6 +615,80 @@ const Viewer = {
 
         this._renderLegend();
         this._drawGizmo();
+    },
+
+    // Draws the currently selected Mesh view mode (VdW surface, SASA —
+    // both a 3Dmol isosurface via the Gaussian-cube text built in Volumes;
+    // r_eq/r_g — a sphere; r_eq,Perrin — the actual equivalent spheroid,
+    // a custom triangle mesh). Every kind is drawn as a translucent solid
+    // pass + a wireframe pass on top, for a single consistent look across
+    // all five modes. Uses the currently *visible* atoms (respects
+    // element/exclusion filters), consistent with everything else in the
+    // scene.
+    _drawVolumeOverlay() {
+        if (!this._viewer || !this._visibleAtoms || this._visibleAtoms.length < 1) return;
+        if (typeof Volumes === 'undefined') return;
+
+        const modeInfo = Volumes.getMode(this._volumeMode);
+        const SOLID_OPACITY = 0.28;
+        const WIRE_OPACITY = 0.85;
+
+        try {
+            if (modeInfo.kind === 'isosurface') {
+                const cubeText = Volumes.buildIsosurfaceCube(this._visibleAtoms, modeInfo.id);
+                if (!cubeText) return;
+
+                const solid = this._viewer.addVolumetricData(cubeText, 'cube', {
+                    isoval: 0, color: modeInfo.color, opacity: SOLID_OPACITY, wireframe: false, smoothness: 1,
+                });
+                if (solid) { _disableDepthWrite(solid); this._volumeShapes.push(solid); }
+
+                const wire = this._viewer.addVolumetricData(cubeText, 'cube', {
+                    isoval: 0, color: modeInfo.color, opacity: WIRE_OPACITY, wireframe: true, smoothness: 1,
+                });
+                if (wire) { _disableDepthWrite(wire); this._volumeShapes.push(wire); }
+
+            } else if (modeInfo.kind === 'sphere') {
+                const sphere = Volumes.buildSphere(this._visibleAtoms, modeInfo.id);
+                if (!sphere || !isFinite(sphere.radius) || sphere.radius <= 0) return;
+
+                const solid = this._viewer.addSphere({
+                    center: sphere.center, radius: sphere.radius, color: modeInfo.color, opacity: SOLID_OPACITY,
+                });
+                _disableDepthWrite(solid);
+                this._volumeShapes.push(solid);
+
+                const wire = this._viewer.addSphere({
+                    center: sphere.center, radius: sphere.radius, color: modeInfo.color, wireframe: true, opacity: WIRE_OPACITY,
+                });
+                _disableDepthWrite(wire);
+                this._volumeShapes.push(wire);
+
+            } else if (modeInfo.kind === 'ellipsoid') {
+                const ell = Volumes.buildEllipsoid(this._visibleAtoms);
+                if (!ell || !isFinite(ell.aEq) || !isFinite(ell.cAx) || ell.aEq <= 0 || ell.cAx <= 0) return;
+
+                const mesh = Volumes.buildSpheroidMesh(ell.center, ell.axis, ell.aEq, ell.cAx);
+
+                const solid = this._viewer.addCustom({
+                    vertexArr: mesh.vertexArr, normalArr: mesh.normalArr, faceArr: mesh.faceArr,
+                    color: modeInfo.color, opacity: SOLID_OPACITY,
+                });
+                _disableDepthWrite(solid);
+                this._volumeShapes.push(solid);
+
+                const wire = this._viewer.addCustom({
+                    vertexArr: mesh.vertexArr, normalArr: mesh.normalArr, faceArr: mesh.faceArr,
+                    color: modeInfo.color, wireframe: true, opacity: WIRE_OPACITY,
+                });
+                _disableDepthWrite(wire);
+                this._volumeShapes.push(wire);
+            }
+        } catch (err) {
+            // Never let a bad grid/isosurface/mesh (e.g. a degenerate
+            // 1-atom "molecule") take down the rest of the render.
+            console.error('Volumes overlay render failed', err);
+        }
     },
 
     _drawPlane({ planeResult, atoms }, color) {
@@ -788,6 +884,16 @@ const Viewer = {
             return a.localeCompare(b);
         });
 
+        // Mirror the on-screen legend's CSS (.viewer-legend /
+        // .viewer-legend-item), which is themed via CSS variables — read
+        // the currently active values instead of hardcoding one theme, so
+        // the exported PNG matches whatever's actually shown on screen
+        // (light or dark), not always dark mode.
+        const css = getComputedStyle(document.documentElement);
+        const boxColor = css.getPropertyValue('--viewer-controls-bg').trim() || '#1e1e1a';
+        const borderColor = css.getPropertyValue('--viewer-border').trim() || 'rgba(255,255,255,0.5)';
+        const textColor = css.getPropertyValue('--text').trim() || '#f0f0ec';
+
         const pad = 8 * scale;
         const boxPadX = 10 * scale;
         const boxPadY = 6 * scale;
@@ -809,9 +915,12 @@ const Viewer = {
         const boxY = ctx.canvas.height - pad - boxH;
 
         ctx.save();
-        ctx.fillStyle = 'rgba(30,30,26,0.85)';
+        ctx.fillStyle = boxColor;
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = Math.max(1, scale);
         this._roundRectPath(ctx, boxX, boxY, boxW, boxH, 6 * scale);
         ctx.fill();
+        ctx.stroke();
 
         elements.forEach((el, i) => {
             const rowY = boxY + boxPadY + rowH * i + rowH / 2;
@@ -822,10 +931,10 @@ const Viewer = {
             ctx.arc(swatchCx, rowY, swatchR, 0, Math.PI * 2);
             ctx.fill();
             ctx.lineWidth = Math.max(1, scale);
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.strokeStyle = borderColor;
             ctx.stroke();
 
-            ctx.fillStyle = '#f0f0ec';
+            ctx.fillStyle = textColor;
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'left';
             ctx.fillText(el, swatchCx + swatchR + gap, rowY);

@@ -41,6 +41,8 @@ No installation and no Python environment are required for normal use.
   - manual dihedrals
   - DOSY-related size estimates: van der Waals volume and surface area, equivalent-sphere radius ($r_{eq}$ — a geometric proxy, not the empirical hydrodynamic radius), and
     standard radius of gyration ($r_g$)
+- **Mesh view**: live 3D rendering of the van der Waals surface, SASA, the $r_{eq}$/$r_{eq}$,Perrin/$r_g$ equivalent spheres, or the actual Perrin equivalent ellipsoid, as a
+  translucent mesh/sphere in the viewer
 - Adjustable covalent-radius tolerance for automatic bond detection
 - Manual graph-active bonds
 - Atom-wise exclusion from analysis
@@ -613,6 +615,8 @@ Viewer controls include:
 - reset view
 - toggle atom labels
 - toggle bond length labels
+- toggle saved planes
+- toggle Mesh view, with a dropdown to pick the displayed representation (see "Mesh view" below)
 
 The viewer reflects:
 
@@ -621,6 +625,22 @@ The viewer reflects:
 - highlighted selections
 - graph-active manual bonds
 - active saved plane
+
+## Mesh view
+
+The `Mesh view` toggle in the 3D viewer displays one geometric representation at a time, picked from the dropdown next to it:
+
+- **Van der Waals surface** / **SASA** — the same isosurface the "DOSY size estimates" $V$/$A$ numbers above are computed from, rendered live as a translucent mesh: a
+  signed-distance field ($f(p) = \min_i(|p-\text{atom}_i| - r_i)$, probe-inflated for SASA) is built on an interactive-resolution voxel grid and handed to 3Dmol.js's own
+  marching-cubes isosurface renderer. This render grid is independent from, and coarser than, the fine grid used for the reported $V$/$A$ values, so the mesh stays
+  interactive on larger structures without affecting the reported numbers.
+- **r_eq** / **r_eq Perrin (sphere)** / **r_g** — the corresponding equivalent-sphere radius from "DOSY size estimates" above, drawn as a sphere: $r_{eq}$ and $r_{eq}$,
+  Perrin centered on the geometric centroid, $r_g$ on the mass-weighted center.
+- **Perrin ellipsoid** — the actual equivalent spheroid the Perrin shape correction is based on, rather than just its scalar radius: a prolate or oblate ellipsoid of
+  revolution with the same volume as the van der Waals volume, aspect ratio $p$, and orientation taken from the principal axis of the geometric gyration tensor (see
+  "DOSY size estimates" above).
+
+Every mode respects the current element filter and atom exclusions, like the rest of the viewer, and is drawn as a translucent fill plus a wireframe outline.
 
 ## Export
 

@@ -96,6 +96,22 @@ function drawAxesTriad(ctx, q, cx, cy, len, style) {
     ctx.globalAlpha = 1;
 }
 
+// Patcht ein einzelnes GLShape so, dass es nach jeder internen
+// Neu-Erzeugung (globj wird bei JEDEM viewer.render() neu aufgerufen
+// und baut das Material komplett neu, auch depthWrite wird dabei
+// wieder auf true zurückgesetzt) depthWrite selbst wieder deaktiviert.
+function _disableDepthWrite(shape) {
+    const origGlobj = shape.globj.bind(shape);
+    shape.globj = function (group, exts) {
+        origGlobj(group, exts);
+        if (shape.renderedShapeObj) {
+            shape.renderedShapeObj.children.forEach(child => {
+                if (child.material) child.material.depthWrite = false;
+            });
+        }
+    };
+}
+
 const Viewer = {
 
     _viewer: null,
@@ -373,25 +389,29 @@ const Viewer = {
     // (matches xyzalign's selection styling).
     _drawSelectionHalos() {
         if (!this._viewer || !this._atoms) return;
-
+    
         this._clearHighlightShapes();
-
+    
         for (const atomIndex of this._highlightedAtoms) {
             const atom = this._atoms[atomIndex];
             if (!atom) continue;
-
+    
             const center = { x: atom.x, y: atom.y, z: atom.z };
-
-            this._highlightShapes.push(this._viewer.addSphere({
+    
+            const solid = this._viewer.addSphere({
                 center, radius: 0.34, color: SELECTION_COLOR, opacity: 0.45,
-            }));
-
-            this._highlightShapes.push(this._viewer.addSphere({
+            });
+            _disableDepthWrite(solid);
+            this._highlightShapes.push(solid);
+    
+            const wire = this._viewer.addSphere({
                 center, radius: 0.38, color: SELECTION_COLOR, wireframe: true, opacity: 0.9,
-            }));
+            });
+            _disableDepthWrite(wire);
+            this._highlightShapes.push(wire);
         }
     },
-
+    
     // Apply highlight only — fast, no model rebuild, no zoomTo
     _applyHighlight() {
         if (!this._model || !this._viewer) return;
@@ -652,7 +672,7 @@ const Viewer = {
             },
         ];
 
-        this._viewer.addCustom({
+        const planeShape = this._viewer.addCustom({
             vertexArr: [
                 corners[0],
                 corners[1],
@@ -666,6 +686,11 @@ const Viewer = {
             color,
             opacity: 0.25,
         });
+        // Prevent this translucent quad from writing to the depth buffer —
+        // otherwise, depending on view angle, it can get sorted before
+        // other transparent shapes (e.g. the selection halo) and either
+        // block them or get fully culled by their depth writes.
+        _disableDepthWrite(planeShape);
 
         for (const [a, b] of [[0, 1], [1, 2], [2, 3], [3, 0]]) {
             this._viewer.addCylinder({

@@ -1380,26 +1380,30 @@ th.sortable-th.sorted .sort-indicator {
     background: color-mix(in srgb, var(--table-zebra) 78%, var(--bg) 22%);
 }
 
-.data-table tr:hover td {
+/* These need the same "tbody tr ... td" specificity as the zebra-striping
+   rule above (not just ".data-table tr.xxx td"), otherwise the zebra
+   background wins on even rows and the state becomes invisible there while
+   still showing correctly on odd rows. */
+.data-table tbody tr:hover td {
     background: var(--table-hover);
     color: var(--text);
     cursor: pointer;
 }
 
-.data-table tr.selected td {
+.data-table tbody tr.selected td {
     background: var(--accent-light);
 }
 
-.data-table tr.inactive td {
+.data-table tbody tr.inactive td {
     opacity: 0.45;
 }
 
-.data-table tr.highlighted td {
+.data-table tbody tr.highlighted td {
     background: #fff2bd;
 }
 
 @media (prefers-color-scheme: dark) {
-    .data-table tr.highlighted td {
+    .data-table tbody tr.highlighted td {
         background: #3d3518;
     }
 }

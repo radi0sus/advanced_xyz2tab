@@ -516,8 +516,8 @@ const App = {
 
             this.selection = this.selection.filter(idx => activeIdx.has(idx));
 
-            this._highlightedAtoms = new Set(
-                [...this._highlightedAtoms].filter(idx => activeIdx.has(idx))
+            this._setHighlightedAtoms(
+                new Set([...this._highlightedAtoms].filter(idx => activeIdx.has(idx)))
             );
         }
 
@@ -531,6 +531,7 @@ const App = {
         this._refreshGeometryResults();
 
         this._renderAtomList();
+        this._renderSelectionToolbar();   
         this._updateSelectionPreview();
     },
 

@@ -267,14 +267,18 @@ Object.assign(App, {
     // twist-boat/half-chair). Sitting right on the grid line means a
     // line would otherwise run straight through the letter, so each
     // one gets a small opaque halo behind it to break the line rather
-    // than looking like it's crossed out.
+    // than looking like it's crossed out. The loop runs through
+    // phi = 360 too (same conformer as phi = 0) so the right edge of
+    // the rectangle isn't left blank — xOf() wraps 360 back to 0, so
+    // 359.999 is used to land right at the edge instead (same trick
+    // used for the axis tick labels below).
     _ringLetterRow(xOf, y0, y1, cellDeg, letters, phase0Deg = 0) {
         const yMid = (y0 + y1) / 2;
         let svg = '';
-        for (let phi = 0; phi < 360; phi += cellDeg) {
+        for (let phi = 0; phi <= 360; phi += cellDeg) {
             const isFirst = Math.round((phi - phase0Deg) / cellDeg) % 2 === 0;
             const letter = isFirst ? letters[0] : letters[1];
-            const x = xOf(phi);
+            const x = xOf(phi === 360 ? 359.999 : phi);
             svg += `<rect x="${x - 7}" y="${yMid - 8}" width="14" height="15" rx="3" style="fill:var(--surface,#fff);opacity:0.8;pointer-events:none" />`;
             svg += `<text x="${x}" y="${yMid + 4}" text-anchor="middle" style="fill:var(--text,#222);font-size:12px;font-weight:700;opacity:0.5;pointer-events:none">${letter}</text>`;
         }

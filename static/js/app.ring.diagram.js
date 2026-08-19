@@ -86,39 +86,31 @@ Object.assign(App, {
             ring.result.classification.family === 'Planar');
     },
 
-    // Golden-angle spiral offset, used to fan out points that would
-    // otherwise land on (almost) the same pixel — both genuinely
-    // coincident data and the "planar" cluster near phi2/theta = 0,
-    // which have no informative position anyway. `order` = 0, 1, 2, ...
-    // among the points sharing a bin.
-    _goldenSpiralOffset(order, stepPx) {
-        if (order === 0) return { dx: 0, dy: 0 };
-        const goldenAngle = 137.5 * Math.PI / 180;
-        const ang = order * goldenAngle;
-        const rad = stepPx * Math.sqrt(order);
-        return { dx: rad * Math.cos(ang), dy: rad * Math.sin(ang) };
-    },
-
-    // Groups raw (cx, cy) points into pixel bins and applies a golden-
-    // spiral offset within each bin so near-coincident points (exact
-    // duplicates, or several "planar" rings all sitting near the same
-    // noisy corner) stay individually clickable/visible. `binPx`
-    // controls how close two points have to be to count as colliding.
-    _dedupeRingPoints(points, binPx) {
+    // Groups points by x-proximity (same or near-identical phi2, e.g.
+    // the exact same ring measured/saved more than once) and stacks
+    // them vertically around the shared center line: 0, one step above,
+    // one step below, two above, two below, ... x (phi2) is left
+    // completely untouched — it's the scientifically meaningful
+    // coordinate here, so the same ring always renders at the same x
+    // no matter how many other points happen to share that column.
+    // Only used for the 5-ring band, where y carries no data (there is
+    // no Q axis), so nudging it for legibility costs nothing.
+    _stackRingPointsVertically(points, binPx, step) {
         const bins = new Map();
 
         points.forEach(p => {
-            const key = `${Math.round(p.cx / binPx)},${Math.round(p.cy / binPx)}`;
+            const key = Math.round(p.cx / binPx);
             if (!bins.has(key)) bins.set(key, []);
             bins.get(key).push(p);
         });
 
         bins.forEach(group => {
             if (group.length < 2) return;
-            group.forEach((p, order) => {
-                const { dx, dy } = this._goldenSpiralOffset(order, binPx * 0.9);
-                p.cx += dx;
-                p.cy += dy;
+            group.forEach((p, i) => {
+                if (i === 0) return;
+                const rank = Math.ceil(i / 2);
+                const sign = i % 2 === 1 ? -1 : 1;
+                p.cy += sign * rank * step;
             });
         });
 
@@ -390,7 +382,12 @@ Object.assign(App, {
         });
         svg += `<text x="14" y="${marginTop + plotH / 2}" text-anchor="middle" style="fill:var(--text,#222);font-size:12px;font-weight:600" transform="rotate(-90 14 ${marginTop + plotH / 2})">&#952; / &#176;</text>`;
 
-        // data points (with collision de-clustering)
+        // data points, always at their true (phi2, theta) position — no
+        // jitter or collision offset. Identical rings (e.g. the same
+        // ring measured/saved more than once) render exactly on top of
+        // each other rather than being scattered apart, since that
+        // would misrepresent the actual geometry. Overlapping points
+        // are still individually selectable via the saved-rings table.
         const rawPoints = data.map(({ ring, idx }) => {
             const r = ring.result;
             const invalid = this._isRingInvalid(ring);
@@ -401,7 +398,6 @@ Object.assign(App, {
                 cx: xOf(r.phi2), cy: yOf(r.theta),
             };
         });
-        this._dedupeRingPoints(rawPoints, 10);
 
         rawPoints.forEach(({ ring, idx, invalid, planar, atoms, cx, cy }) => {
             const r = ring.result;
@@ -498,9 +494,11 @@ Object.assign(App, {
         }
         svg += `<text x="${marginLeft + plotW / 2}" y="${H - 8}" text-anchor="middle" style="fill:var(--text,#222);font-size:12px;font-weight:600">&#966;&#8322; / &#176;</text>`;
 
-        // data points, all nominally on the band's center line
-        // (no radial/Q information encoded); collision de-clustering
-        // nudges apart points that land close together in phi2
+        // data points, on the band's center line (no radial/Q meaning
+        // there). x (phi2) is always the true value — never adjusted.
+        // Coincident points (e.g. the same ring saved more than once)
+        // are stacked vertically around the center line purely for
+        // legibility, since y carries no scientific information here.
         const rawPoints = data.map(({ ring, idx }) => {
             const r = ring.result;
             const invalid = this._isRingInvalid(ring);
@@ -511,7 +509,7 @@ Object.assign(App, {
                 cx: xOf(r.phi2), cy: bandMid,
             };
         });
-        this._dedupeRingPoints(rawPoints, 14);
+        this._stackRingPointsVertically(rawPoints, 14, 20);
 
         rawPoints.forEach(({ ring, idx, invalid, planar, atoms, cx, cy }) => {
             const r = ring.result;

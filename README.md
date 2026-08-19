@@ -294,7 +294,7 @@ as invalid (with the reason — excluded atom(s) and/or missing bond(s) — show
 
 **Note:**   
 - Inverting the absolute configuration transforms $\theta$ into $180° - \theta$ and $\phi_2$ into $180° + \phi_2$.  
-- A cyclic forward shift of the pivot atom from Atom 1 to Atom 2 transforms $\theta$ into $180° - \theta$ and $\phi_2_$ into $\phi_2 + 120°$.  
+- A cyclic forward shift of the pivot atom from Atom 1 to Atom 2 transforms $\theta$ into $180° - \theta$ and $\phi_2$ into $\phi_2 + 120°$.  
 - Changing the sense of rotation transforms $\theta$ into $180°- \theta$ and $\phi_2$ into $180° - \phi_2$, and vice versa.  
 
 ## Continuous Shape Measures (CShM)

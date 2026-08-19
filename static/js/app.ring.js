@@ -178,6 +178,7 @@ Object.assign(App, {
     // --- Ring tab rendering ---
 
     _renderRingAnalysis() {
+        this._renderRingDiagrams();
         this._renderSavedRingsTable();
         this._renderSavedRingDetails();
     },
@@ -186,6 +187,9 @@ Object.assign(App, {
         const container = document.getElementById('saved-rings-wrap');
         if (!container) return;
 
+        // DOM row references don't survive re-renders, but the selection
+        // itself (by ring id) should — e.g. after clicking a diagram point,
+        // or after any other change that re-renders this table.
         this._selectedRingRow = null;
 
         if (!this.savedRings.length) {
@@ -240,8 +244,10 @@ Object.assign(App, {
                 status = reasons.length ? `invalid: ${reasons.join('; ')}` : 'invalid';
             }
 
+            const isSelected = String(this._selectedRingId) === String(ring.id);
+
             html += `
-                <tr class="${invalid ? 'inactive' : ''}" data-id="${ring.id}" data-atoms="${atoms.map(a => a.index).join(',')}">
+                <tr class="${invalid ? 'inactive' : ''}${isSelected ? ' selected' : ''}" data-id="${ring.id}" data-atoms="${atoms.map(a => a.index).join(',')}">
                     <td>${idx + 1}</td>
                     <td>${ring.name}</td>
                     <td>${result.N}</td>
@@ -277,17 +283,27 @@ Object.assign(App, {
         container.innerHTML = html;
 
         container.querySelectorAll('tr[data-atoms]').forEach(row => {
+            if (String(row.dataset.id) === String(this._selectedRingId)) {
+                this._selectedRingRow = row;
+            }
+
             row.addEventListener('click', () => {
                 const atomIndices = row.dataset.atoms
                     .split(',')
                     .filter(Boolean)
                     .map(Number);
 
+                const clickedId = row.dataset.id;
+
                 this._selectedRingRow = Tables._selectRow(
                     row,
                     this._selectedRingRow,
                     sel => {
                         this._setHighlightedAtoms(sel ? new Set(atomIndices) : new Set());
+                        this._selectedRingId = sel ? clickedId : null;
+                        // Diagrams don't re-render on their own here — just
+                        // restyle the matching point(s) in place.
+                        this._applyRingDiagramSelection();
                     },
                     row
                 );

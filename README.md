@@ -292,6 +292,11 @@ Rings with negligible puckering amplitude ($Q$ &lt; 0.05 Å) are reported as "Pl
 Saved rings are not deleted automatically if an atom is excluded, or if a manual bond that was part of the ring's connectivity is removed again. Instead, they are marked
 as invalid (with the reason — excluded atom(s) and/or missing bond(s) — shown in the ring table and details), the same way as saved planes.
 
+**Note:**   
+- Inverting the absolute configuration transforms $\theta$ into $180° - \theta$ and $\phi$ into $180° + \phi$.  
+- A cyclic forward shift of the pivot atom from Atom 1 to Atom 2 transforms $\theta$ into $180° - \theta$ and $\phi$ into $\phi + 120°$.  
+- Changing the sense of rotation transforms $\theta$ into $180°- \theta$ and $\phi$ into $180° - \phi$, and vice versa.  
+
 ## Continuous Shape Measures (CShM)
 
 The `CShM` tab computes Continuous Shape Measures for the coordination sphere of any single atom based on:

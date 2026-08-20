@@ -700,6 +700,37 @@ const Markdown = {
             );
             lines.push('');
 
+            // --- Evans & Boeyens (1989) conformational decomposition ---
+            // Independent of the Protti-style classification above (see
+            // note there and below) — no shared thresholds, no shared
+            // diagram, deliberately kept separate.
+            const boeyensRows = savedRings
+                .map((ring, i) => ({ ring, i, decomp: Chem.boeyensDecomposition(ring.result) }))
+                .filter(({ decomp }) => decomp);
+
+            if (boeyensRows.length > 0) {
+                lines.push('### Evans & Boeyens (1989) Conformational Decomposition');
+                lines.push('');
+                lines.push('| # | Name | Decomposition |');
+                lines.push('|---|------|----------------|');
+
+                boeyensRows.forEach(({ ring, i, decomp }) => {
+                    lines.push(
+                        `| ${i + 1} | ${mdCell(ring.name)} | ${mdCell(Chem.boeyensDecompositionLabel(decomp))} |`
+                    );
+                });
+
+                lines.push('');
+                lines.push(
+                    '*Independent, non-classifying description — each ring\u2019s ' +
+                    'exact, normalized share of the nearest primitive symmetric ' +
+                    'forms (Cremer-Pople normal modes), not a nearest-neighbor ' +
+                    'label like the table above. Reference: D. G. Evans & ' +
+                    'J. C. A. Boeyens, Acta Cryst. (1989), B45, 581\u2013590.*'
+                );
+                lines.push('');
+            }
+
             for (const ring of savedRings) {
                 const atomsForRing = ringAtoms(ring);
                 const result = ring.result;

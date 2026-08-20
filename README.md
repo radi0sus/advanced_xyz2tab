@@ -33,6 +33,7 @@ No installation and no Python environment are required for normal use.
   - angles between saved planes
   - Cremer-Pople ring puckering parameters (Q, $\theta$, $\phi_2$) for 5- and 6-membered rings
   - approximate ring conformation classification (chair, boat, twist-boat, envelope, half-chair, twist)
+  - Evans & Boeyens conformational decomposition (normalized % share of the nearest primitive symmetric forms)
   - Continuous Shape Measures (CShM) for any bonded coordination sphere (CN 2–6), against the ideal reference polyhedra, plus polyhedral volume and
     $\tau_4$, $\tau_4\prime$, $\tau_5$ geometry indices (CN 4/5)
   - approximate molecular point group symmetry, with a tolerance-adjustable, per-element error score
@@ -301,6 +302,44 @@ as invalid (with the reason — excluded atom(s) and/or missing bond(s) — show
 - Inverting the absolute configuration transforms $\theta$ into $180° - \theta$ and $\phi_2$ into $180° + \phi_2$.  
 - A cyclic forward shift of the pivot atom from atom 1 to atom 2 transforms $\theta$ into $180° - \theta$ and $\phi_2$ into $\phi_2 + 120°$.  
 - Changing the sense of rotation transforms $\theta$ into $180°- \theta$ and $\phi_2$ into $180° - \phi_2$, and vice versa.  
+
+### Graphical conformation map
+
+Below the ring table, the `Ring analysis` tab plots every saved ring on two diagrams — one for 6-membered rings, one for 5-membered rings — using the same 
+classification described above (not the Evans-Boeyens decomposition below).
+
+- **6-membered rings**: a Cartesian $\phi_2$ (x-axis) vs. $\theta$ (y-axis) map, essentially an equirectangular ("unrolled") projection of the Cremer-Pople sphere.
+Both chair poles ($\theta$ = 0° and $\theta$ = 180°) become the top and bottom edges of the rectangle instead of collapsing to a single point, as they would on a polar plot.  
+- **5-membered rings**: a single horizontal $\phi_2$ band.  
+
+The layout of shaded classification zones and background conformer letters (C/E/H/B/S, or E/T for 5-rings) is inspired by the diagrams from Protti et al.
+Points are colored and numbered to match the ring table, clickable to highlight the corresponding ring atoms in the 3D view, and are kept at their exact computed position — 
+identical rings render exactly on top of each other. Nearly-planar rings ($Q$ &lt; 0.05 Å) are marked with a dashed "P" circle instead of a filled marker, 
+since $\theta$/$\phi_2$ are not meaningfully defined at that amplitude. Both diagrams can be exported together as PNG via a single button below them.
+
+### Evans & Boeyens conformational decomposition
+
+In addition to the nearest-neighbor classification above, each saved ring's details panel (and the Markdown export) reports an independent, exact decomposition based on:
+
+> Deborah G. Evans, Jan C. A. Boeyens,  
+> "Conformational Analysis of Ring Pucker",  
+> *Acta Cryst.* **1989**, *B45*, 581-590.  
+> https://doi.org/10.1107/S0108768189008190  
+
+Rather than snapping the ring to the single nearest classical form, this expresses its actual $(q_2, \phi_2[, q_3])$ exactly as a normalized linear combination 
+of the nearest primitive symmetric forms — e.g. "91.7% Chair + 7.8% Boat ($\phi$=0°) + 0.6% Twist-boat ($\phi$=330°)" for a 6-ring, 
+or "23.4% Envelope ($\phi$=252°) + 76.6% Twist ($\phi$=270°)" for a 5-ring. The fractions always sum to 100% and are independent of ring numbering and puckering amplitude.
+
+For 6-membered rings this is the Chair ($B_{2u}$) mode plus the nearest Boat/Twist-boat ($E_2$) phase pair; for 5-membered rings it is the nearest Envelope/Twist ($E_2$) phase pair only, 
+since the $B_{2u}$ mode only exists for even-membered rings. This is deliberately kept separate from the classification above — no shared thresholds, no shared diagram — and is 
+not shown for nearly-planar rings ($Q$ &lt; 0.05 Å) or for 7-/8-membered rings, which are outside its current scope.
+
+The implementation was cross-checked against all worked examples in the paper and against PLATON's Fortran implementation of the same method:
+
+> Anthony L. Spek,  
+> "Single-crystal structure validation with the program PLATON",  
+> *J. Appl. Cryst.* **2003**, *36*, 7-11.  
+> https://doi.org/10.1107/S0021889802022112
 
 ## Continuous Shape Measures (CShM)
 

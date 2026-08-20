@@ -348,6 +348,7 @@ Object.assign(App, {
         const invalidDetails = invalid ? this._ringInvalidDetails(ring) : null;
         const centroid = result.centroid;
         const normal = result.normal;
+        const boeyens = Chem.boeyensDecomposition(result);
 
         let html = `
             <div class="table-label">Ring details — ${ring.name}</div>
@@ -404,6 +405,20 @@ Object.assign(App, {
                         grid used e.g. in Protti et al., ChemPlusChem 2026, 91,
                         e70192), and is an approximation rather than an exact match
                         to one of the 38 canonical IUPAC forms.
+                    </div>
+                ` : ''}
+                ${boeyens ? `
+                    <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+                        <div style="color:var(--text-muted)">Evans &amp; Boeyens decomposition</div>
+                        <div>${Chem.boeyensDecompositionLabel(boeyens)}</div>
+                        <div style="margin-top:4px;color:var(--text-soft);font-size:12px">
+                            A separate, independent description from the Conformation
+                            classification above — the ring's exact, normalized share
+                            of the nearest primitive symmetric forms (Cremer-Pople
+                            normal modes), not a nearest-neighbor label. Reference:
+                            D. G. Evans &amp; J. C. A. Boeyens, Acta Cryst. (1989),
+                            B45, 581–590.
+                        </div>
                     </div>
                 ` : ''}
             </div>

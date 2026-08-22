@@ -75,6 +75,16 @@ Object.assign(App, {
             .filter(({ ring }) => ring.result && ring.result.N === 5);
     },
 
+    // Escapes text that gets interpolated into an SVG <title> element as
+    // raw markup (see _ringDiagramPointSvg) — needed because the Evans &
+    // Boeyens label text isn't otherwise guaranteed to be XML-safe.
+    _xmlEscapeTitle(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    },
+
     _ringDiagramFamilyLabel(result) {
         if (!result || !result.classification) return '—';
         const c = result.classification;
@@ -407,10 +417,12 @@ Object.assign(App, {
             const circleStyle = `opacity:${opacity};` +
                 (planar ? '' : `stroke:var(--surface,#fff);stroke-width:1.5`);
 
+            const boeyens = Chem.boeyensDecomposition(r);
             const title = `${ring.name}: ${atoms.map(a => a.label).join('\u2013')}\n` +
                 `Q = ${r.Q.toFixed(4)} \u00c5, \u03b8 = ${r.theta.toFixed(2)}\u00b0, \u03c6\u2082 = ${r.phi2.toFixed(2)}\u00b0\n` +
                 `${this._ringDiagramFamilyLabel(r)}${invalid ? ' (invalid)' : ''}` +
-                (planar ? '\nRing is nearly planar (Q &lt; 0.05 \u00c5) \u2014 \u03b8/\u03c6\u2082 are numerically meaningless noise, so this position is unreliable (shown paler, dashed).' : '');
+                (planar ? '\nRing is nearly planar (Q &lt; 0.05 \u00c5) \u2014 \u03b8/\u03c6\u2082 are numerically meaningless noise, so this position is unreliable (shown paler, dashed).' : '') +
+                (boeyens ? `\nEvans &amp; Boeyens: ${this._xmlEscapeTitle(Chem.boeyensDecompositionLabel(boeyens))}` : '');
 
             svg += this._ringDiagramPointSvg(ring, idx, cx, cy, circleStyle, atomIdxCsv, title, planar);
         });
@@ -519,10 +531,12 @@ Object.assign(App, {
             const circleStyle = `opacity:${opacity};` +
                 (planar ? '' : `stroke:var(--surface,#fff);stroke-width:1.5`);
 
+            const boeyens = Chem.boeyensDecomposition(r);
             const title = `${ring.name}: ${atoms.map(a => a.label).join('\u2013')}\n` +
                 `Q = ${r.Q.toFixed(4)} \u00c5, \u03c6\u2082 = ${r.phi2.toFixed(2)}\u00b0\n` +
                 `${this._ringDiagramFamilyLabel(r)}${invalid ? ' (invalid)' : ''}` +
-                (planar ? '\nRing is nearly planar (Q &lt; 0.05 \u00c5) \u2014 \u03c6\u2082 is numerically meaningless noise, so this position is unreliable (shown paler, dashed).' : '');
+                (planar ? '\nRing is nearly planar (Q &lt; 0.05 \u00c5) \u2014 \u03c6\u2082 is numerically meaningless noise, so this position is unreliable (shown paler, dashed).' : '') +
+                (boeyens ? `\nEvans &amp; Boeyens: ${this._xmlEscapeTitle(Chem.boeyensDecompositionLabel(boeyens))}` : '');
 
             svg += this._ringDiagramPointSvg(ring, idx, cx, cy, circleStyle, atomIdxCsv, title, planar);
         });
